@@ -645,8 +645,10 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
     $y = $x+1;
     $z = $y+1;
-		$mzaAct  = $arrayMZAOK[$x];
-		$mzaSig  = $arrayMZAOK[$y];
+
+	// manzana actual (1), manzana siguiente (2), manzana tercera (3)
+	$mzaAct  = $arrayMZAOK[$x];
+	$mzaSig  = $arrayMZAOK[$y];
     $mzaTerc = $arrayMZAOK[$z];
 
 
@@ -733,7 +735,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
           )
 
           select 
-			*
+	      *
+
 		  from orderpunto
 
           order by  areaorder asc, dist asc
@@ -745,35 +748,26 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
     		 ) as $fila) {
 
-				$wkt = $fila['wktnode'];
 
+				     $wkt = $fila['wktnode'];				     
 
-					
-                     //id del vertice segun la geometria del punto de adyacencia entre manzanas
-					 $pgr_sql = "
-					 select id as puntoid
-					 from public.indec_e0211linea_vertices_pgr 
-					 where st_astext(the_geom) =  '".$wkt."' ";
-
-
-
-
-           	         $puntoidsql = "
+				     $puntoidsql = "
                      with dumpmza as (
                      select
                      (ST_DumpPoints(geom)).*
                      from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaAct."'
                      )
-
-                     select
-                     path[3]::integer as puntoid
-                     from dumpmza
-                     where st_astext(geom) = '".$wkt."'
-                     limit 1
+		                 select
+		                 path[3]::integer as puntoid
+		                 from dumpmza
+		                 where st_astext(geom) = '".$wkt."'
+		                 limit 1
                      ";
                      $puntoid = $mbd->prepare($puntoidsql);
                      $puntoid->execute();
                      $puntoid_res = $puntoid->fetch(PDO::FETCH_ASSOC);
+
+
 
                      $puntosigidsql = "
                      with dumpmza as (
@@ -781,18 +775,28 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
                      (ST_DumpPoints(geom)).*
                      from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'
                      )
-
-                     select
-                     path[3]::integer as puntoid
-                     from dumpmza
-                     where st_astext(geom) = '".$wkt."'
-                     limit 1
+		                 select
+		                 path[3]::integer as puntoid
+		                 from dumpmza
+		                 where st_astext(geom) = '".$wkt."'
+		                 limit 1
                      ";
                      $puntosigid = $mbd->prepare($puntosigidsql);
                      $puntosigid->execute();
                      $puntosigid_res = $puntosigid->fetch(PDO::FETCH_ASSOC);
 
 
+
+					 // id del vertice segun la geometria del punto de adyacencia entre manzanas
+                     $pgrsql = "
+						select id as puntoid 
+						from public.indec_e0211linea_vertices_pgr
+						where st_astext(the_geom) = '".$wkt."'
+						limit 1
+                     ";
+                     $pgrid = $mbd->prepare($pgrsql);
+                     $pgrid->execute();
+                     $pgrid_res = $pgrid->fetch(PDO::FETCH_ASSOC);
 
 
 
@@ -807,7 +811,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
                   'manzana_act_puntoid_final_act' =>$puntoid_res['puntoid'],
                   'manzana_sig_puntoid_inicio_sig' =>$puntosigid_res['puntoid'],
-				  'idrouting_act' => $pgidres['puntoid']
+				  'pgrid_res' => $pgrid_res['pgrid_res']
 
 
                 ];
@@ -868,25 +872,33 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 		 ) as $fila) {
 
-		$pgridsql = "select id from public.indec_e0211linea_vertices_pgr where st_astext(the_geom) = '".$fila['intersect_lineabound']."' limit 1";
-		$pgrid = $mbd->prepare($pgridsql);
+
+		$wkt = $fila['intersect_lineabound'];
+
+
+		// id del vertice segun la geometria del punto de adyacencia entre manzanas
+		$pgrsql = "
+			select id as puntoid 
+			from public.indec_e0211linea_vertices_pgr
+			where st_astext(the_geom) = '".$wkt."'
+			limit 1
+		";
+		$pgrid = $mbd->prepare($pgrsql);
 		$pgrid->execute();
-		$pgridres = $pgrid->fetch(PDO::FETCH_ASSOC);
+		$pgrid_res = $pgrid->fetch(PDO::FETCH_ASSOC);
 
 
+		  // Resultados por manzana
+		  $respuestamza[$x] = [
+		    'radio' => $fr,
 
-      // Resultados por manzana
-      $respuestamza[$x] = [
-        'radio' => $fr,
+		    'manzana_act'=>$mzaAct,
+		    'manzana_sig' => $mzaSig,
 
-        'manzana_act'=>$mzaAct,
-        'manzana_sig' => $mzaSig,
-
-        'entremanzanas_linea' => $fila['intersect_lineamza'],
-        'entremanzanas_punto' => $fila['intersect_lineabound'],
-  	    'idrouting_act' => 1
-      ];
-
+		    'entremanzanas_linea' => $fila['intersect_lineamza'],
+		    'entremanzanas_punto' => $fila['intersect_lineabound'],
+	  	    'pgrid_res' => $pgrid_res['pgrid_res']
+		  ];
 
 
 
@@ -907,7 +919,7 @@ else {
     'manzana_sig'=> null,
     'entremanzanas_linea' => null,
     'entremanzanas_punto' => null,
-	'idrouting_act' => null
+	'pgrid_res' => null
   ];
 
 }
