@@ -39,3 +39,14 @@ Dado un conjunto de prov||depto||codloc||frac||radio , el script devuelve:
         - id de manzanas adyacentes a manzana actual
         - distancia de manzanas adyacentes y manzana actual
 
+
+
+***
+
+**topologia_routing.sql**
+
+Recorrido desde una perspectiva de funciones de topologia ChPP y Dijkstra para el recorrido de segmentos
+
+**geom_recorridomanzanas_linestringboundary.sql**
+
+test de recorrido de manzanas por valor 0-1 del linestring del radio y sus manzanas adyacentes
