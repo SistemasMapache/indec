@@ -748,21 +748,17 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 				$wkt = $fila['wktnode'];
 
 
-
-                     $pgsql = "
+					
+                     //id del vertice segun la geometria del punto de adyacencia entre manzanas
+					 $pgr_sql = "
 					 select id as puntoid
 					 from public.indec_e0211linea_vertices_pgr 
-					 where st_astext(the_geom) =  '".$wkt."'
-                     ";
-echo $pgsql;
-                     $pgid = $mbd->prepare($pgsql);
-                     $pgid->execute();
-                     $pgidres = $pgid->fetch(PDO::FETCH_ASSOC);
+					 where st_astext(the_geom) =  '".$wkt."' ";
 
 
 
 
-           	          $puntoidsql = "
+           	         $puntoidsql = "
                      with dumpmza as (
                      select
                      (ST_DumpPoints(geom)).*
