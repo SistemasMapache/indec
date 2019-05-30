@@ -706,9 +706,13 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
               )
             ) areaorder,
 
+
+			
+
             (dp).path[1] As index,
 
             ST_AsText((dp).geom) As wktnode,
+
 
             (dp).geom <#>
 
@@ -728,7 +732,9 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
           FROM (SELECT ST_DumpPoints(intersect_lineabound) AS dp,intersect_lineamza, intersect_lineabound from linderasmza ) As foo
           )
 
-          select * from orderpunto
+          select 
+			*
+		  from orderpunto
 
           order by  areaorder asc, dist asc
           limit 1
@@ -739,8 +745,24 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
     		 ) as $fila) {
 
+				$wkt = $fila['wktnode'];
 
-                     $puntoidsql = "
+
+
+                     $pgsql = "
+					 select id as puntoid
+					 from public.indec_e0211linea_vertices_pgr 
+					 where st_astext(the_geom) =  '".$wkt."'
+                     ";
+echo $pgsql;
+                     $pgid = $mbd->prepare($pgsql);
+                     $pgid->execute();
+                     $pgidres = $pgid->fetch(PDO::FETCH_ASSOC);
+
+
+
+
+           	          $puntoidsql = "
                      with dumpmza as (
                      select
                      (ST_DumpPoints(geom)).*
@@ -750,7 +772,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
                      select
                      path[3]::integer as puntoid
                      from dumpmza
-                     where st_astext(geom) = '".$fila['wktnode']."'
+                     where st_astext(geom) = '".$wkt."'
                      limit 1
                      ";
                      $puntoid = $mbd->prepare($puntoidsql);
@@ -767,12 +789,16 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
                      select
                      path[3]::integer as puntoid
                      from dumpmza
-                     where st_astext(geom) = '".$fila['wktnode']."'
+                     where st_astext(geom) = '".$wkt."'
                      limit 1
                      ";
                      $puntosigid = $mbd->prepare($puntosigidsql);
                      $puntosigid->execute();
                      $puntosigid_res = $puntosigid->fetch(PDO::FETCH_ASSOC);
+
+
+
+
 
                 // Resultados por radio
                 $respuestamza[$x] = [
@@ -780,13 +806,12 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
                   'manzana_act'=>$mzaAct,
                   'manzana_sig' => $mzaSig,
-
                   'entremanzanas_linea' => $fila['intersect_lineamza'],
+                  'entremanzanas_punto_interseccion' => $wkt,
 
-
-                  'entremanzanas_punto_interseccion' => $fila['wktnode'],
                   'manzana_act_puntoid_final_act' =>$puntoid_res['puntoid'],
-                  'manzana_sig_puntoid_inicio_sig' =>$puntosigid_res['puntoid']
+                  'manzana_sig_puntoid_inicio_sig' =>$puntosigid_res['puntoid'],
+				  'idrouting_act' => $pgidres['puntoid']
 
 
                 ];
@@ -847,6 +872,13 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 		 ) as $fila) {
 
+		$pgridsql = "select id from public.indec_e0211linea_vertices_pgr where st_astext(the_geom) = '".$fila['intersect_lineabound']."' limit 1";
+		$pgrid = $mbd->prepare($pgridsql);
+		$pgrid->execute();
+		$pgridres = $pgrid->fetch(PDO::FETCH_ASSOC);
+
+
+
       // Resultados por manzana
       $respuestamza[$x] = [
         'radio' => $fr,
@@ -855,7 +887,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
         'manzana_sig' => $mzaSig,
 
         'entremanzanas_linea' => $fila['intersect_lineamza'],
-        'entremanzanas_punto' => $fila['intersect_lineabound']
+        'entremanzanas_punto' => $fila['intersect_lineabound'],
+  	    'idrouting_act' => 1
       ];
 
 
@@ -877,7 +910,8 @@ else {
     'manzana_act'=>$mzaAct,
     'manzana_sig'=> null,
     'entremanzanas_linea' => null,
-    'entremanzanas_punto' => null
+    'entremanzanas_punto' => null,
+	'idrouting_act' => null
   ];
 
 }
