@@ -344,6 +344,10 @@ select id
 -- para la primera manzana y la ultima manzana, este recorrido es 1 solo, y deberia iniciar y finalizar en el mismo id de vertice.
 -- para las manzanas que no sean ni la primera ni la ultima, se generan 2 recorridos entre id vertice de adyacencia inicial y id vertice de adyacencia de manzana siguiente:
 
+-- Returns the “K” shortest paths.
+-- https://docs.pgrouting.org/dev/en/pgr_KSP.html
+-- The K shortest path routing algorithm based on Yen’s algorithm. “K” is the number of shortest paths desired.
+
  SELECT * FROM pgr_ksp(
    'SELECT id,
     source, target,
