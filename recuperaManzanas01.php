@@ -656,7 +656,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
     			foreach($mbd->query(
         "
-        with orderpunto as (
+        WITH orderpunto as (
+
           WITH linderasmza as (
 
           SELECT
@@ -707,9 +708,6 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
               )
             ) areaorder,
 
-
-			
-
             (dp).path[1] As index,
 
             ST_AsText((dp).geom) As wktnode,
@@ -729,26 +727,28 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
             select ST_Boundary(st_union(geom)) from indec_e0211poligono where frac||radio = '".$fr."'
             )
             )
+
           ) dist
-          FROM (SELECT ST_DumpPoints(intersect_lineabound) AS dp,intersect_lineamza, intersect_lineabound from linderasmza ) As foo
+
+          FROM (
+                SELECT
+                    ST_DumpPoints(intersect_lineabound) AS dp,
+                    intersect_lineamza,
+                    intersect_lineabound
+                from linderasmza
+                ) As foo
+
           )
 
-          select 
-	      *
-
-		  from orderpunto
-
+          select * from orderpunto
           order by  areaorder asc, dist asc
           limit 1
-
-
     		"
-
 
     		 ) as $fila) {
 
-
-					$wkt = $fila['wktnode'];				     
+          // punto de interseccion de manzana act y sig.
+					$wkt = $fila['wktnode'];
 
 
 
@@ -790,7 +790,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 					// id del vertice segun la geometria del punto de adyacencia entre manzanas
 					$pgr_vertix_sql = "
-						select id as pgr_vertix_id 
+						select id as pgr_vertix_id
 						from public.indec_e0211linea_vertices_pgr
 						where st_astext(the_geom) = '".$wkt."'
 						limit 1
@@ -875,7 +875,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 		// id del vertice segun la geometria del punto de adyacencia entre manzanas
 		$pgr_vertix_sql = "
-			select id as pgr_vertix_id 
+			select id as pgr_vertix_id
 			from public.indec_e0211linea_vertices_pgr
 			where st_astext(the_geom) = '".$wkt."'
 			limit 1

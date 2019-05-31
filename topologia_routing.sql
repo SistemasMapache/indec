@@ -1,14 +1,23 @@
 
 -- testing script desde la perspectiva de topologia
 
+-- public.indec_e0211linea : lineas de manzana
+
+-- recomendamos homogenizar geometrias : ST_CollectionHomogenize
+-- https://postgis.net/docs/ST_CollectionHomogenize.html
+-- si la geometria es lineas y esta como multilinestring va a quedar como linestring.
+-- ej   SELECT ST_AsText(ST_CollectionHomogenize('GEOMETRYCOLLECTION(POINT(0 0))'));
+-- Res: POINT(0 0)
+
+
 -- agregando columnas target y source a las lineas de indec:
-ALTER TABLE indec_e0211linea ADD COLUMN target integer;
-ALTER TABLE indec_e0211linea ADD COLUMN source integer;
+ALTER TABLE public.indec_e0211linea ADD COLUMN target integer;
+ALTER TABLE public.indec_e0211linea ADD COLUMN source integer;
+
 
 --pgr_createTopology — Builds a network topology based on the geometry information.
 --https://docs.pgrouting.org/2.2/en/src/topology/doc/pgr_createTopology.html
-
-SELECT pgr_createTopology('indec_e0211linea', 0.0001, 'geom', 'id'); 
+SELECT pgr_createTopology('indec_e0211linea', 0.0001, 'geom', 'id');
 
 /*
 NOTICE:  PROCESSING:
@@ -19,7 +28,7 @@ NOTICE:  1000 edges processed
 NOTICE:  2000 edges processed
 NOTICE:  -------------> TOPOLOGY CREATED FOR  2840 edges
 NOTICE:  Rows with NULL geometry or NULL id: 0
-NOTICE:  Vertices table for table public.indec_e0211linea is: public.indec_e0211linea_dev_vertices_pgr
+NOTICE:  Vertices table for table public.indec_e0211linea is: public.indec_e0211linea_vertices_pgr
 NOTICE:  ----------------------------------------------
 
 Total query runtime: 5.2 secs
@@ -27,7 +36,7 @@ Total query runtime: 5.2 secs
 
 */
 
--- tener en cuenta: 
+-- tener en cuenta:
 --pgr_nodeNetwork - Crea los nodos de una tabla de bordes de la red.
 --https://docs.pgrouting.org/2.0/es/src/common/doc/functions/node_network.html
 --https://gis.stackexchange.com/questions/184332/how-does-pgr-createtopology-assign-source-and-target
@@ -58,11 +67,13 @@ Total query runtime: 335 msec
 1 row retrieved.
 
 */
--- Dead ends: 2 
+-- Dead ends: 2
 -- OK
 
+-- alter owner a tabla creada por pgrouting (de postgres al usuario de conexion del script, en este caso 'indec')
+ALTER TABLE public.indec_e0211linea_vertices_pgr OWNER TO indec;
 
---check 
+--check
 select * from indec_e0211linea LIMIT 100;
 
 -- check de radio:
@@ -85,41 +96,41 @@ with chpp as (
 SELECT * FROM pgr_directedChPP(
     'SELECT id,
      source, target,
-     st_length(geom4326::geography, true)/100000 as cost, st_length(geom4326::geography, true)/100000 as reverse_cost FROM indec_e0211linea where ( mzai like ''020770100108%'' or mzad like ''020770100108%'' )'
+     st_length(geom4326::geography, true)/100000 as cost, st_length(geom4326::geography, true)/100000 as reverse_cost FROM public.indec_e0211linea where ( mzai like ''020770100108%'' or mzad like ''020770100108%'' )'
 )
-) 
+)
 select * from chpp
 
 -- test chpp sobre radio 020770100108, respuesta chpp y join a tabla linestrings y alturas.
  WITH chpp AS (
-	SELECT 
+	SELECT
             pgr_directedchpp.seq,
             pgr_directedchpp.node,
             pgr_directedchpp.edge,
             pgr_directedchpp.cost,
             pgr_directedchpp.agg_cost
 	FROM pgr_directedchpp(
-		   'SELECT id, source, target, length as cost, length reverse_cost 
-		    FROM indec_e0211linea 
+		   'SELECT id, source, target, length as cost, length reverse_cost
+		    FROM public.indec_e0211linea
 		    WHERE (mzai like ''020770100107%'' or mzad like ''020770100107%'' )'::text
-            ) 
+            )
             pgr_directedchpp(seq, node, edge, cost, agg_cost)
         )
-        
- SELECT 
-    tipo as calletipo, 
+
+ SELECT
+    tipo as calletipo,
     nombre as callenombre,
 
-    CASE 
+    CASE
 	    WHEN mzai like '020770100107%' then desdei
 	    ELSE desded
     END as desde,
 
-    CASE 
+    CASE
 	    WHEN mzai like '020770100107%' then hastai
 	    ELSE hastad
     END as hasta,
-        
+
     chpp.seq-1 as seq,
     chpp.node,
     chpp.edge,
@@ -127,7 +138,7 @@ select * from chpp
     chpp.agg_cost,
     indec_e0211linea.*
    FROM chpp
-        JOIN indec_e0211linea ON indec_e0211linea.id = chpp.edge
+        JOIN public.indec_e0211linea ON indec_e0211linea.id = chpp.edge
    WHERE agg_cost > 0
    ORDER BY seq;
 
@@ -135,52 +146,52 @@ select * from chpp
 
 
 ---ids boundary: identificar ids de radio que tocan el boundary
-SELECT 
-id, source, target, length as cost, length reverse_cost 
-FROM indec_e0211linea 
+SELECT
+id, source, target, length as cost, length reverse_cost
+FROM indec_e0211linea
 WHERE ( mzai like '020770100107%' or mzad like '020770100107%' )
 and st_intersects
 (geom,
     (
     SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-    FROM indec_e0211linea 
+    FROM public.indec_e0211linea
     WHERE (mzai like '020770100107%' or mzad like '020770100107%' )
-    ) 
+    )
 ) = 't'
 and st_astext(ST_CollectionExtract(st_intersection(geom,
     (
     SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-    FROM indec_e0211linea 
+    FROM public.indec_e0211linea
     WHERE (mzai like '020770100107%' or mzad like '020770100107%' )
-    ) 
+    )
 ),1)) in ('POINT EMPTY','MULTIPOINT EMPTY')
-		    
+
 
 
 -- ids sin boundary: identificar ids de radio que no tocan el boundary
-SELECT 
-id, source, target, length as cost, length reverse_cost 
-FROM indec_e0211linea 
-where  (mzai like '020770100107%' or mzad like '020770100107%' ) and id not in 
+SELECT
+id, source, target, length as cost, length reverse_cost
+FROM indec_e0211linea
+where  (mzai like '020770100107%' or mzad like '020770100107%' ) and id not in
 (
-	SELECT 
+	SELECT
 	id
-	FROM indec_e0211linea 
+	FROM public.indec_e0211linea
 	WHERE ( mzai like '020770100107%' or mzad like '020770100107%' )
 	and st_intersects
 	(geom,
 	    (
 	    SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-	    FROM indec_e0211linea 
+	    FROM public.indec_e0211linea
 	    WHERE (mzai like '020770100107%' or mzad like '020770100107%' )
-	    ) 
+	    )
 	) = 't'
 	and st_astext(ST_CollectionExtract(st_intersection(geom,
 	    (
 	    SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-	    FROM indec_e0211linea 
+	    FROM indec_e0211linea
 	    WHERE (mzai like '020770100107%' or mzad like '020770100107%' )
-	    ) 
+	    )
 	),1)) in ('POINT EMPTY','MULTIPOINT EMPTY')
 )
 
@@ -189,7 +200,7 @@ where  (mzai like '020770100107%' or mzad like '020770100107%' ) and id not in
 -- chpp solo sobre ids que SI tocan el outer boundary del radio:
 
  WITH chpp AS (
-	SELECT 
+	SELECT
             pgr_directedchpp.seq,
             pgr_directedchpp.node,
             pgr_directedchpp.edge,
@@ -197,44 +208,44 @@ where  (mzai like '020770100107%' or mzad like '020770100107%' ) and id not in
             pgr_directedchpp.agg_cost
 	FROM pgr_directedchpp(
 		'
-			SELECT 
-			id, source, target, length as cost, length reverse_cost 
-			FROM indec_e0211linea 
+			SELECT
+			id, source, target, length as cost, length reverse_cost
+			FROM indec_e0211linea
 			WHERE ( mzai like ''020770100107%'' or mzad like ''020770100107%'' )
 			and st_intersects
 			(geom,
 			    (
 			    SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-			    FROM indec_e0211linea 
+			    FROM indec_e0211linea
 			    WHERE (mzai like ''020770100107%'' or mzad like ''020770100107%'' )
-			    ) 
+			    )
 			) = ''t''
 			and st_astext(ST_CollectionExtract(st_intersection(geom,
 			    (
 			    SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-			    FROM indec_e0211linea 
+			    FROM indec_e0211linea
 			    WHERE (mzai like ''020770100107%'' or mzad like ''020770100107%'' )
-			    ) 
+			    )
 			),1)) in (''POINT EMPTY'',''MULTIPOINT EMPTY'')
 		'::text
-            ) 
+            )
             pgr_directedchpp(seq, node, edge, cost, agg_cost)
         )
-        
- SELECT 
-    tipo as calletipo, 
+
+ SELECT
+    tipo as calletipo,
     nombre as callenombre,
 
-    CASE 
+    CASE
 	    WHEN mzai like '020770100107%' then desdei
 	    ELSE desded
     END as desde,
 
-    CASE 
+    CASE
 	    WHEN mzai like '020770100107%' then hastai
 	    ELSE hastad
     END as hasta,
-        
+
     chpp.seq-1 as seq,
     chpp.node,
     chpp.edge,
@@ -252,7 +263,7 @@ where  (mzai like '020770100107%' or mzad like '020770100107%' ) and id not in
 -- chpp solo sobre ids que NO tocan el outer boundary del radio:
 
  WITH chpp AS (
-	SELECT 
+	SELECT
             pgr_directedchpp.seq,
             pgr_directedchpp.node,
             pgr_directedchpp.edge,
@@ -260,51 +271,51 @@ where  (mzai like '020770100107%' or mzad like '020770100107%' ) and id not in
             pgr_directedchpp.agg_cost
 	FROM pgr_directedchpp(
 		'
-SELECT 
-id, source, target, length as cost, length reverse_cost 
-FROM indec_e0211linea 
-where  (mzai like ''020770100107%'' or mzad like ''020770100107%'' ) and id not in 
+SELECT
+id, source, target, length as cost, length reverse_cost
+FROM indec_e0211linea
+where  (mzai like ''020770100107%'' or mzad like ''020770100107%'' ) and id not in
 (
-	SELECT 
+	SELECT
 	id
-	FROM indec_e0211linea 
+	FROM indec_e0211linea
 	WHERE ( mzai like ''020770100107%'' or mzad like ''020770100107%'' )
 	and st_intersects
 	(geom,
 	    (
 	    SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-	    FROM indec_e0211linea 
+	    FROM public.indec_e0211linea
 	    WHERE (mzai like ''020770100107%'' or mzad like ''020770100107%'' )
-	    ) 
+	    )
 	) = ''t''
 	and st_astext(ST_CollectionExtract(st_intersection(geom,
 	    (
 	    SELECT st_boundary(ST_BuildArea(ST_Collect(geom)))
-	    FROM indec_e0211linea 
+	    FROM public.indec_e0211linea
 	    WHERE (mzai like ''020770100107%'' or mzad like ''020770100107%'' )
-	    ) 
+	    )
 	),1)) in (''POINT EMPTY'',''MULTIPOINT EMPTY'')
 )
 
 				'::text
-            ) 
+            )
             pgr_directedchpp(seq, node, edge, cost, agg_cost)
         )
-        
- SELECT 
-    tipo as calletipo, 
+
+ SELECT
+    tipo as calletipo,
     nombre as callenombre,
 
-    CASE 
+    CASE
 	    WHEN mzai like '020770100107%' then desdei
 	    ELSE desded
     END as desde,
 
-    CASE 
+    CASE
 	    WHEN mzai like '020770100107%' then hastai
 	    ELSE hastad
     END as hasta,
-        
+
     chpp.seq-1 as seq,
     chpp.node,
     chpp.edge,
@@ -312,18 +323,18 @@ where  (mzai like ''020770100107%'' or mzad like ''020770100107%'' ) and id not 
     chpp.agg_cost,
     indec_e0211linea.*
    FROM chpp
-        JOIN indec_e0211linea ON indec_e0211linea.id = chpp.edge
+        JOIN public.indec_e0211linea ON indec_e0211linea.id = chpp.edge
    WHERE agg_cost > 0
    ORDER BY seq;
 
 
 
--- todo: 
+-- todo:
 -- mix:
 -- camino largo y camino corto (longest path + shortest path)
 -- outside boundary e inside lineas (ChPP)
 
--- diseño de recorrido con chpp 
+-- diseño de recorrido con chpp
 -- diseño de recorrido con caminoCorto + caminoLargo entre nodos de intersecciones de recorridos de manzanas.
 
 
@@ -331,9 +342,9 @@ where  (mzai like ''020770100107%'' or mzad like ''020770100107%'' ) and id not 
 --
 -- id del vertice donde la geometria asociada al vertice es igual al punto de interseccion entre manzanas adyacentes:
 -- este id sale del wktnode del script recuperaManzana01, esto es, la geometria del punto adyacente entre manzanas.
-select id 
-    from 
-    public.indec_e0211linea_vertices_pgr 
+select id
+    from
+    public.indec_e0211linea_vertices_pgr
     where st_astext(the_geom) = 'POINT(5636669 6171998.5)' limit 1;
 
 
@@ -351,10 +362,10 @@ select id
  SELECT * FROM pgr_ksp(
    'SELECT id,
     source, target,
-    st_length(geomline::geography, true)/100000 as cost, 
-    st_length(geomline::geography, true)/100000 as reverse_cost 
-    FROM 
-    public.indec_e0211linea 
+    st_length(geomline::geography, true)/100000 as cost,
+    st_length(geomline::geography, true)/100000 as reverse_cost
+    FROM
+    public.indec_e0211linea
 
     WHERE ( mzai like ''020770100108056'' or mzad like ''020770100108056'' )',
         68, -- id vertice inicial
@@ -362,6 +373,3 @@ select id
         2,  -- cantidad de recorridos
         true
     );
- 
-
-
