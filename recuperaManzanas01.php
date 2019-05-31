@@ -801,7 +801,10 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 */
 
 
-
+          $pgr_verticeid_old = '';
+          if (isset($pgr_vertix_res['pgr_vertix_id'])) {
+          $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
+          }
 					// id del vertice segun la geometria del punto de adyacencia entre manzanas
 					$pgr_vertix_sql = "
 						select id as pgr_vertix_id
@@ -827,7 +830,9 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
                   'manzana_sig' => $mzaSig,
                   'entremanzanas_linea' => $fila['intersect_lineamza'],
                   'entremanzanas_punto_interseccion' => $wkt,
-        				  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+        				  'pgr_verticeid_old'=>$pgr_verticeid_old,
+                  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+
 
 
 
@@ -892,7 +897,10 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 		$wkt = $fila['intersect_lineabound'];
 
-
+    $pgr_verticeid_old = '';
+    if (isset($pgr_vertix_res['pgr_vertix_id'])) {
+    $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
+    }
 		// id del vertice segun la geometria del punto de adyacencia entre manzanas
 		$pgr_vertix_sql = "
 			select id as pgr_vertix_id
@@ -915,7 +923,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 		    'manzana_sig' => $mzaSig,
 		    'entremanzanas_linea' => $fila['intersect_lineamza'],
 		    'entremanzanas_punto_interseccion' => $wkt,
-			  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+			  'pgr_verticeid_old'=>$pgr_verticeid_old,
+        'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
 
 		  ];
 
@@ -942,7 +951,9 @@ else {
     'entremanzanas_linea' => null,
     'entremanzanas_punto_interseccion' => null,
     //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
-	  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+    'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
+    'pgr_verticeid' => ''
+
   ];
 
 }
