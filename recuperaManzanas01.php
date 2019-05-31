@@ -658,11 +658,11 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
     //final   : 1 ruteo desde-hasta : mismo vertice de interseccion adyacente.
 
   if ( $x+1 == count($arrayMZAOK) ) {
-    $mzaTipo = 'fin';
+    $mzaCantRutas = 1;
   } elseif ( $x+1 == 1 ) {
-    $mzaTipo = 'inicio';
+    $mzaCantRutas = 1;
   } else {
-    $mzaTipo = 'medio';
+    $mzaCantRutas = 2;
   }
 
 
@@ -824,7 +824,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
                 $respuestamza[$x] = [
                   'radio' => $fr,
                   'manzana_cant'=> count($arrayMZAOK),
-                  'manzana_tipo'=> $mzaTipo,
+                  'manzana_cantrutas'=> $mzaCantRutas,
                   'manzana_pos' => $x+1,
                   'manzana_act'=>$mzaAct,
                   'manzana_sig' => $mzaSig,
@@ -917,7 +917,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 		  $respuestamza[$x] = [
 		    'radio' => $fr,
         'manzana_cant'=> count($arrayMZAOK),
-        'manzana_tipo'=> $mzaTipo,
+        'manzana_cantrutas'=> $mzaCantRutas,
         'manzana_pos' => $x+1,
 		    'manzana_act'=>$mzaAct,
 		    'manzana_sig' => $mzaSig,
@@ -944,7 +944,7 @@ else {
   $respuestamza[$x] = [
     'radio' => $fr,
     'manzana_cant'=> count($arrayMZAOK),
-    'manzana_tipo'=> $mzaTipo,
+    'manzana_cantrutas'=> $mzaCantRutas,
     'manzana_pos' => $x+1,
     'manzana_act'=>$mzaAct,
     'manzana_sig'=> null,
