@@ -373,3 +373,80 @@ select id
         2,  -- cantidad de recorridos
         true
     );
+
+
+
+-- testing pgr_tsp
+
+
+SELECT *
+FROM pgr_tsp('
+SELECT
+	id::integer,
+	st_x(the_geom) as x,
+	st_y(the_geom) as y
+
+FROM indec_e0211linea_vertices_pgr
+
+WHERE id in (
+
+	SELECT source as id FROM
+	public.indec_e0211linea
+	WHERE
+	(
+	mzai like ''%01080%'' or
+	mzad like ''%01080%''
+	)
+	and ( mzai like ''%57'' or mzai like ''%56'' or mzai like ''%55'' or mzai like ''%58'' )
+
+	union
+	SELECT target as id FROM
+	public.indec_e0211linea
+	WHERE
+	(
+	mzai like ''%01080%'' or
+	mzad like ''%01080%''
+	)
+	and ( mzai like ''%57'' or mzai like ''%56'' or mzai like ''%55'' or mzai like ''%58'' )
+
+
+) ORDER BY id'
+
+, 99);
+
+
+
+
+
+
+
+SELECT
+	id,
+	st_x(the_geom) as x,
+	st_y(the_geom) as y
+
+FROM indec_e0211linea_vertices_pgr
+
+WHERE id in (
+
+	SELECT source as id FROM
+	public.indec_e0211linea
+	WHERE
+	(
+	mzai like '%01080%' or
+	mzad like '%01080%'
+	)
+	and ( mzai like '%57' or mzai like '%56' or mzai like '%55' or mzai like '%58' )
+
+	union
+	SELECT target as id FROM
+	public.indec_e0211linea
+	WHERE
+	(
+	mzai like '%01080%' or
+	mzad like '%01080%'
+	)
+	and ( mzai like '%57' or mzai like '%56' or mzai like '%55' or mzai like '%58' )
+
+
+) ORDER BY id

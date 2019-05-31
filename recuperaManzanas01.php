@@ -817,8 +817,35 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 					$pgr_vertix_res = $pgr_vertix->fetch(PDO::FETCH_ASSOC);
 
 
+if ( $mzaCantRutas == 2) {
 
+  // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
+  $pgr_ruteo_sql = "
+    SELECT * FROM pgr_ksp(
+      'SELECT id,
+       source, target,
+       st_length(geomline::geography, true)/100000 as cost,
+       st_length(geomline::geography, true)/100000 as reverse_cost
+       FROM
+       public.indec_e0211linea
+       WHERE
+       (
+         mzai like ''%".$fr.'0'.$mzaAct."'' or
+         mzad like ''%".$fr.'0'.$mzaAct."'' )',
+         ".$pgr_verticeid_old.",
+         ".$pgr_vertix_res['pgr_vertix_id'].",
+         2,
+         true
+    ) where edge > 0
+  ";
 
+  $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
+  $pgr_ruteo->execute();
+  $pgr_ruteo_res1 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+
+} elseif ( $mzaCantRutas == 1) {
+
+}
 
                 // Resultados por radio
                 $respuestamza[$x] = [
@@ -831,7 +858,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
                   'entremanzanas_linea' => $fila['intersect_lineamza'],
                   'entremanzanas_punto_interseccion' => $wkt,
         				  'pgr_verticeid_old'=>$pgr_verticeid_old,
-                  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+                  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
+                  'pgr_ruteo_res' => array($pgr_ruteo_res1)
 
 
 
@@ -895,6 +923,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 		 ) as $fila) {
 
 
+
 		$wkt = $fila['intersect_lineabound'];
 
     $pgr_verticeid_old = '';
@@ -913,6 +942,36 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 		$pgr_vertix_res = $pgr_vertix->fetch(PDO::FETCH_ASSOC);
 
 
+    if ( $mzaCantRutas == 2) {
+
+      // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
+      $pgr_ruteo_sql = "
+        SELECT * FROM pgr_ksp(
+          'SELECT id,
+           source, target,
+           st_length(geomline::geography, true)/100000 as cost,
+           st_length(geomline::geography, true)/100000 as reverse_cost
+           FROM
+           public.indec_e0211linea
+           WHERE
+           (
+             mzai like ''%".$fr.'0'.$mzaAct."'' or
+             mzad like ''%".$fr.'0'.$mzaAct."'' )',
+             ".$pgr_verticeid_old.",
+             ".$pgr_vertix_res['pgr_vertix_id'].",
+             2,
+             true
+        ) where edge > 0
+      ";
+
+      $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
+      $pgr_ruteo->execute();
+      $pgr_ruteo_res2 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+
+    } elseif ( $mzaCantRutas == 1) {
+
+    }
+
 		  // Resultados por manzana
 		  $respuestamza[$x] = [
 		    'radio' => $fr,
@@ -924,7 +983,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 		    'entremanzanas_linea' => $fila['intersect_lineamza'],
 		    'entremanzanas_punto_interseccion' => $wkt,
 			  'pgr_verticeid_old'=>$pgr_verticeid_old,
-        'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+        'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
+        'pgr_ruteo_res' => array($pgr_ruteo_res2)
 
 		  ];
 
@@ -939,10 +999,39 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 	} //mza 2
 
 else {
+
+    // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
+    $pgr_ruteo_sql = "
+      SELECT * FROM pgr_ksp(
+        'SELECT
+         id,
+         source,
+         target,
+         st_length(geomline::geography, true)/100000 as cost,
+         st_length(geomline::geography, true)/100000 as reverse_cost
+         FROM
+         public.indec_e0211linea
+         WHERE
+         (
+           mzai like ''%".$fr.'0'.$mzaAct."'' or
+           mzad like ''%".$fr.'0'.$mzaAct."'' )',
+           ".$pgr_vertix_res['pgr_vertix_id'].",
+           ".$pgr_vertix_res['pgr_vertix_id'].",
+           2,
+           true
+      ) where edge > 0
+    ";
+
+    $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
+    $pgr_ruteo->execute();
+    $pgr_ruteo_res3 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+
+
+
   // Resultados de la ultima manzana (fin de la secuencia)
   // Esta manzana es el inicio del subconjunto de manzanas no boundaries en caso de contener las mismas.
   $respuestamza[$x] = [
-    'radio' => $fr,
+    'radio' => $pgr_ruteo_sql,
     'manzana_cant'=> count($arrayMZAOK),
     'manzana_cantrutas'=> $mzaCantRutas,
     'manzana_pos' => $x+1,
@@ -952,7 +1041,8 @@ else {
     'entremanzanas_punto_interseccion' => null,
     //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
     'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
-    'pgr_verticeid' => ''
+    'pgr_verticeid' => '',
+    'pgr_ruteo_res' => array($pgr_ruteo_res3)
 
   ];
 
