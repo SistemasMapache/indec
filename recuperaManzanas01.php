@@ -648,8 +648,22 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 	// manzana actual (1), manzana siguiente (2), manzana tercera (3)
 	$mzaAct  = $arrayMZAOK[$x];
 	$mzaSig  = $arrayMZAOK[$y];
-    $mzaTerc = $arrayMZAOK[$z];
+  $mzaTerc = $arrayMZAOK[$z];
 
+
+
+  //if $mzaTipo:
+    //inicial : 1 ruteo desde-hasta : mismo vertice de interseccion adyacente.
+    //medio   : 2 ruteos desde adyacencia inicial a adyacencia siguiente
+    //final   : 1 ruteo desde-hasta : mismo vertice de interseccion adyacente.
+
+  if ( $x+1 == count($arrayMZAOK) ) {
+    $mzaTipo = 'fin';
+  } elseif ( $x+1 == 1 ) {
+    $mzaTipo = 'inicio';
+  } else {
+    $mzaTipo = 'medio';
+  }
 
 
   if ( !empty($mzaTerc ) ) {
@@ -741,7 +755,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
           )
 
           select * from orderpunto
-          order by  areaorder asc, dist asc
+          order by areaorder asc, dist asc
           limit 1
     		"
 
@@ -801,14 +815,20 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 
 
+
+
                 // Resultados por radio
                 $respuestamza[$x] = [
                   'radio' => $fr,
+                  'manzana_cant'=> count($arrayMZAOK),
+                  'manzana_tipo'=> $mzaTipo,
+                  'manzana_pos' => $x+1,
                   'manzana_act'=>$mzaAct,
                   'manzana_sig' => $mzaSig,
                   'entremanzanas_linea' => $fila['intersect_lineamza'],
                   'entremanzanas_punto_interseccion' => $wkt,
-				  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+        				  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+
 
 
                 ];
@@ -888,11 +908,14 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 		  // Resultados por manzana
 		  $respuestamza[$x] = [
 		    'radio' => $fr,
+        'manzana_cant'=> count($arrayMZAOK),
+        'manzana_tipo'=> $mzaTipo,
+        'manzana_pos' => $x+1,
 		    'manzana_act'=>$mzaAct,
 		    'manzana_sig' => $mzaSig,
 		    'entremanzanas_linea' => $fila['intersect_lineamza'],
 		    'entremanzanas_punto_interseccion' => $wkt,
-			'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
+			  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
 
 		  ];
 
@@ -911,16 +934,20 @@ else {
   // Esta manzana es el inicio del subconjunto de manzanas no boundaries en caso de contener las mismas.
   $respuestamza[$x] = [
     'radio' => $fr,
+    'manzana_cant'=> count($arrayMZAOK),
+    'manzana_tipo'=> $mzaTipo,
+    'manzana_pos' => $x+1,
     'manzana_act'=>$mzaAct,
     'manzana_sig'=> null,
     'entremanzanas_linea' => null,
     'entremanzanas_punto_interseccion' => null,
-	'pgr_verticeid' => null
+    //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
+	  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id']
   ];
 
 }
 
-}
+} // mzasok
 
 
 
