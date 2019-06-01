@@ -452,7 +452,8 @@ WHERE id in (
 ) ORDER BY id
 
 
-
+-- https://docs.pgrouting.org/2.5/en/pgr_TSP.html
+-- Returns a route that visits all the nodes exactly once.
 -- pgr_TSP para vertice inicial y final mismo id.
 
 SELECT * FROM pgr_TSP(
