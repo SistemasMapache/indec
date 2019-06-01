@@ -450,3 +450,38 @@ WHERE id in (
 
 
 ) ORDER BY id
+
+
+
+-- pgr_TSP para vertice inicial y final mismo id.
+
+SELECT * FROM pgr_TSP(
+    $$
+    SELECT * FROM pgr_dijkstraCostMatrix(
+        '
+        SELECT
+	id,
+	source, target,
+	st_length(geomline::geography, true)/100000 as cost,
+	st_length(geomline::geography, true)/100000 as reverse_cost
+	FROM
+	public.indec_e0211linea
+
+	WHERE
+	(
+	mzai like ''%01080%'' or
+	mzad like ''%01080%''
+	)
+	AND
+	(
+	mzad like ''%58'' or
+	mzai like ''%58''
+	)
+	',
+        (SELECT array_agg(id) FROM indec_e0211linea_vertices_pgr ),
+        directed := false
+    )
+    $$,
+    start_id := 99,
+    randomize := false
+);
