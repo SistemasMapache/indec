@@ -782,12 +782,14 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 					$pgr_vertix_res = $pgr_vertix->fetch(PDO::FETCH_ASSOC);
 
 $linestring_ruteo_res = array();
+
 if ( $mzaCantRutas == 2) {
 
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
   $pgr_ruteo_sql = "
-    SELECT * FROM pgr_ksp(
-      'SELECT id,
+    with ruteo as ( SELECT * FROM pgr_ksp(
+      'SELECT
+       id,
        source, target,
        st_length(geomline::geography, true)/100000 as cost,
        st_length(geomline::geography, true)/100000 as reverse_cost
@@ -802,8 +804,25 @@ if ( $mzaCantRutas == 2) {
          2,
          true
     ) where edge > 0
-  ";
 
+    )
+select
+".$mzaAct." as mzaid,
+linea.id as lineaid,
+linea.tipo,
+linea.nombre,
+  case
+        when linea.mzad like '%".$mzaAct."' then linea.desded
+        else linea.desdei
+        end desde,
+
+        case
+        when linea.mzad like '%".$mzaAct."' then linea.hastad
+        else linea.hastai
+        end hasta
+from ruteo
+join public.indec_e0211linea linea on ruteo.edge = linea.id
+  ";
   $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $pgr_ruteo->execute();
   $linestring_ruteo_res = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
@@ -858,7 +877,7 @@ if ( $mzaCantRutas == 2) {
       $linestring_sql = "
       SELECT DISTINCT
       ".$mzaAct." as mzaid,
-      g.id,
+      g.id as lineaid,
       g.tipo,
       g.nombre,
       case
@@ -989,7 +1008,8 @@ if ( $mzaCantRutas == 2) {
 
       // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
       $pgr_ruteo_sql = "
-        SELECT * FROM pgr_ksp(
+          with ruteo as (
+          SELECT * FROM pgr_ksp(
           'SELECT id,
            source, target,
            st_length(geomline::geography, true)/100000 as cost,
@@ -1005,7 +1025,25 @@ if ( $mzaCantRutas == 2) {
              2,
              true
         ) where edge > 0
-      ";
+
+            )
+        select
+        ".$mzaAct." as mzaid,
+        linea.id as lineaid,
+        linea.tipo,
+        linea.nombre,
+          case
+                when linea.mzad like '%".$mzaAct."' then linea.desded
+                else linea.desdei
+                end desde,
+
+                case
+                when linea.mzad like '%".$mzaAct."' then linea.hastad
+                else linea.hastai
+                end hasta
+        from ruteo
+        join public.indec_e0211linea linea on ruteo.edge = linea.id
+          ";
 
       $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
       $pgr_ruteo->execute();
@@ -1094,7 +1132,7 @@ else {
         $linestring_sql = "
         SELECT DISTINCT
         ".$mzaAct." as mzaid,
-        g.id,
+        g.id as lineaid,
         g.tipo,
         g.nombre,
         case
