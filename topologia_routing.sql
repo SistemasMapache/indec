@@ -486,3 +486,48 @@ SELECT * FROM pgr_TSP(
     start_id := 99,
     randomize := false
 );
+
+
+-- ejemplo de listado de viviendas segun segmento linea de manzana por recorrido
+
+with callealt as  (
+        SELECT DISTINCT
+        58 as mzaid,
+        g.id as lineaid,
+        1 as path_id,
+        1 as path_seq,
+        g.tipo as tipocalle,
+        g.nombre as nombrecalle,
+        case
+        when  g.mzad like '%58' then g.desded
+        else g.desdei
+        end desde,
+
+        case
+        when  g.mzad like '%58' then g.hastad
+        else g.hastai
+        end hasta,
+	*
+        FROM
+        public.indec_e0211linea g
+
+
+        join
+        ( select * FROM indec_e0211linea_vertices_pgr where id in (99, 84) ) v
+        on
+
+        ( g.source = 99 and g.target = 84 ) or
+        ( g.source = 84 and g.target = 99 )
+
+)
+
+select * from
+
+indec_comuna11 viv
+
+join callealt
+on
+viv.mza_comuna = 58 and
+viv.cnombre = callealt.nombrecalle and
+viv.hn between callealt.desde and callealt.hasta
+order by cnombre asc,hn asc,hp desc, hd asc

@@ -1176,6 +1176,10 @@ else {
         array_push($linestring_ruteo_res,$linestring_ruteo->fetchAll(PDO::FETCH_ASSOC));
 
 
+
+        // listado de viviendas
+
+
     }
 
 
