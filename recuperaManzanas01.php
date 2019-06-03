@@ -766,41 +766,6 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 
 
-/*
-					$puntoidsql = "
-					with dumpmza as (
-					select
-					(ST_DumpPoints(geom)).*
-					from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaAct."'
-					)
-					 select
-					 path[3]::integer as puntoid
-					 from dumpmza
-					 where st_astext(geom) = '".$wkt."'
-					 limit 1
-					";
-					$puntoid = $mbd->prepare($puntoidsql);
-					$puntoid->execute();
-					$puntoid_res = $puntoid->fetch(PDO::FETCH_ASSOC);
-
-					$puntosigidsql = "
-					with dumpmza as (
-					select
-					(ST_DumpPoints(geom)).*
-					from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'
-					)
-					 select
-					 path[3]::integer as puntoid
-					 from dumpmza
-					 where st_astext(geom) = '".$wkt."'
-					 limit 1
-					";
-					$puntosigid = $mbd->prepare($puntosigidsql);
-					$puntosigid->execute();
-					$puntosigid_res = $puntosigid->fetch(PDO::FETCH_ASSOC);
-*/
-
-
           $pgr_verticeid_old = '';
           if (isset($pgr_vertix_res['pgr_vertix_id'])) {
           $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
@@ -816,7 +781,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 					$pgr_vertix->execute();
 					$pgr_vertix_res = $pgr_vertix->fetch(PDO::FETCH_ASSOC);
 
-
+$linestring_ruteo_res = array();
 if ( $mzaCantRutas == 2) {
 
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
@@ -841,9 +806,87 @@ if ( $mzaCantRutas == 2) {
 
   $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $pgr_ruteo->execute();
-  $pgr_ruteo_res1 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+  $linestring_ruteo_res = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
 
 } elseif ( $mzaCantRutas == 1) {
+
+  $pgr_ruteo_sql = "
+  SELECT * FROM pgr_TSP(
+      $$
+      SELECT * FROM pgr_dijkstraCostMatrix
+      (
+        '
+        SELECT
+          id,
+          source, target,
+          st_length(geomline::geography, true)/100000 as cost,
+          st_length(geomline::geography, true)/100000 as reverse_cost
+        FROM
+        public.indec_e0211linea
+        WHERE
+        (
+          mzai like ''%".$fr."0%'' or
+          mzad like ''%".$fr."0%''
+        )
+        AND
+        (
+          mzad like ''%".$mzaAct."'' or
+          mzai like ''%".$mzaAct."''
+        )
+        ',
+        ( SELECT array_agg(id) FROM indec_e0211linea_vertices_pgr ),
+        directed := false
+      )
+      $$,
+      start_id := ".$pgr_vertix_res['pgr_vertix_id'].",
+      randomize := false
+  )";
+
+    $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
+    $pgr_ruteo->execute();
+    $pgr_ruteo_res1 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+
+
+    for ($nodo = 0; $nodo <= count($pgr_ruteo_res1)-2; $nodo++) {
+
+
+
+      $nodosig = $nodo+1;
+      $nodo1 = $pgr_ruteo_res1[$nodo]['node'];
+      $nodo2 = $pgr_ruteo_res1[$nodosig]['node'];
+
+      $linestring_sql = "
+      SELECT DISTINCT
+      ".$mzaAct." as mzaid,
+      g.id,
+      g.tipo,
+      g.nombre,
+      case
+      when  g.mzad like '%".$mzaAct."' then g.desded
+      else g.desdei
+      end desde,
+
+      case
+      when  g.mzad like '%".$mzaAct."' then g.hastad
+      else g.hastai
+      end hasta
+      FROM
+      public.indec_e0211linea g
+
+      join
+      ( select * FROM indec_e0211linea_vertices_pgr where id in (".$nodo1.", ".$nodo2.") ) v
+      on
+
+      ( g.source = ".$nodo1." and g.target = ".$nodo2." ) or
+      ( g.source = ".$nodo2." and g.target = ".$nodo1." )
+      ";
+
+      $linestring_ruteo = $mbd->prepare($linestring_sql);
+      $linestring_ruteo->execute();
+      array_push($linestring_ruteo_res,$linestring_ruteo->fetchAll(PDO::FETCH_ASSOC));
+
+
+  }
 
 }
 
@@ -859,7 +902,7 @@ if ( $mzaCantRutas == 2) {
                   'entremanzanas_punto_interseccion' => $wkt,
         				  'pgr_verticeid_old'=>$pgr_verticeid_old,
                   'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
-                  'pgr_ruteo_res' => array($pgr_ruteo_res1)
+                  'pgr_ruteo_res' => array($linestring_ruteo_res)
 
 
 
@@ -1000,38 +1043,92 @@ if ( $mzaCantRutas == 2) {
 
 else {
 
-    // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
+
+    $linestring_ruteo_res = array();
+
     $pgr_ruteo_sql = "
-      SELECT * FROM pgr_ksp(
-        'SELECT
-         id,
-         source,
-         target,
-         st_length(geomline::geography, true)/100000 as cost,
-         st_length(geomline::geography, true)/100000 as reverse_cost
-         FROM
-         public.indec_e0211linea
-         WHERE
-         (
-           mzai like ''%".$fr.'0'.$mzaAct."'' or
-           mzad like ''%".$fr.'0'.$mzaAct."'' )',
-           ".$pgr_vertix_res['pgr_vertix_id'].",
-           ".$pgr_vertix_res['pgr_vertix_id'].",
-           2,
-           true
-      ) where edge > 0
-    ";
+    SELECT * FROM pgr_TSP(
+        $$
+        SELECT * FROM pgr_dijkstraCostMatrix
+        (
+          '
+          SELECT
+            id,
+            source, target,
+            st_length(geomline::geography, true)/100000 as cost,
+            st_length(geomline::geography, true)/100000 as reverse_cost
+          FROM
+          public.indec_e0211linea
+          WHERE
+          (
+            mzai like ''%".$fr."0%'' or
+            mzad like ''%".$fr."0%''
+          )
+          AND
+          (
+            mzad like ''%".$mzaAct."'' or
+            mzai like ''%".$mzaAct."''
+          )
+          ',
+          ( SELECT array_agg(id) FROM indec_e0211linea_vertices_pgr ),
+          directed := false
+        )
+        $$,
+        start_id := ".$pgr_vertix_res['pgr_vertix_id'].",
+        randomize := false
+    )";
 
-    $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
-    $pgr_ruteo->execute();
-    $pgr_ruteo_res3 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+      $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
+      $pgr_ruteo->execute();
+      $pgr_ruteo_res1 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
 
+
+      for ($nodo = 0; $nodo <= count($pgr_ruteo_res1)-2; $nodo++) {
+
+
+
+        $nodosig = $nodo+1;
+        $nodo1 = $pgr_ruteo_res1[$nodo]['node'];
+        $nodo2 = $pgr_ruteo_res1[$nodosig]['node'];
+
+        $linestring_sql = "
+        SELECT DISTINCT
+        ".$mzaAct." as mzaid,
+        g.id,
+        g.tipo,
+        g.nombre,
+        case
+        when  g.mzad like '%".$mzaAct."' then g.desded
+        else g.desdei
+        end desde,
+
+        case
+        when  g.mzad like '%".$mzaAct."' then g.hastad
+        else g.hastai
+        end hasta
+        FROM
+        public.indec_e0211linea g
+
+        join
+        ( select * FROM indec_e0211linea_vertices_pgr where id in (".$nodo1.", ".$nodo2.") ) v
+        on
+
+        ( g.source = ".$nodo1." and g.target = ".$nodo2." ) or
+        ( g.source = ".$nodo2." and g.target = ".$nodo1." )
+        ";
+
+        $linestring_ruteo = $mbd->prepare($linestring_sql);
+        $linestring_ruteo->execute();
+        array_push($linestring_ruteo_res,$linestring_ruteo->fetchAll(PDO::FETCH_ASSOC));
+
+
+    }
 
 
   // Resultados de la ultima manzana (fin de la secuencia)
   // Esta manzana es el inicio del subconjunto de manzanas no boundaries en caso de contener las mismas.
   $respuestamza[$x] = [
-    'radio' => $pgr_ruteo_sql,
+    'radio' => $fr,
     'manzana_cant'=> count($arrayMZAOK),
     'manzana_cantrutas'=> $mzaCantRutas,
     'manzana_pos' => $x+1,
@@ -1042,7 +1139,7 @@ else {
     //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
     'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
     'pgr_verticeid' => '',
-    'pgr_ruteo_res' => array($pgr_ruteo_res3)
+    'pgr_ruteo_res' => array($linestring_ruteo_res)
 
   ];
 
