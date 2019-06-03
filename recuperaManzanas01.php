@@ -666,6 +666,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
   }
 
 
+  //3ra manz
   if ( !empty($mzaTerc ) ) {
 
     			foreach($mbd->query(
@@ -781,13 +782,17 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 					$pgr_vertix->execute();
 					$pgr_vertix_res = $pgr_vertix->fetch(PDO::FETCH_ASSOC);
 
+
+
 $linestring_ruteo_res = array();
+
+
 
 if ( $mzaCantRutas == 2) {
 
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
   $pgr_ruteo_sql = "
-    with ruteo as ( SELECT * FROM pgr_ksp(
+    with ruteo as ( SELECT * FROM pgr_ksp (
       'SELECT
        id,
        source, target,
@@ -806,22 +811,23 @@ if ( $mzaCantRutas == 2) {
     ) where edge > 0
 
     )
-select
-".$mzaAct." as mzaid,
-linea.id as lineaid,
-linea.tipo,
-linea.nombre,
-  case
-        when linea.mzad like '%".$mzaAct."' then linea.desded
-        else linea.desdei
-        end desde,
+  select
+  ".$mzaAct." as mzaid,
+  linea.id as lineaid,
+  linea.tipo,
+  linea.nombre,
+    case
+          when linea.mzad like '%".$mzaAct."' then linea.desded
+          else linea.desdei
+          end desde,
 
-        case
-        when linea.mzad like '%".$mzaAct."' then linea.hastad
-        else linea.hastai
-        end hasta
-from ruteo
-join public.indec_e0211linea linea on ruteo.edge = linea.id
+          case
+          when linea.mzad like '%".$mzaAct."' then linea.hastad
+          else linea.hastai
+          end hasta,
+  ruteo.*
+  from ruteo
+  join public.indec_e0211linea linea on ruteo.edge = linea.id
   ";
   $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $pgr_ruteo->execute();
@@ -859,7 +865,7 @@ join public.indec_e0211linea linea on ruteo.edge = linea.id
       $$,
       start_id := ".$pgr_vertix_res['pgr_vertix_id'].",
       randomize := false
-  )";
+    )";
 
     $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
     $pgr_ruteo->execute();
@@ -878,6 +884,8 @@ join public.indec_e0211linea linea on ruteo.edge = linea.id
       SELECT DISTINCT
       ".$mzaAct." as mzaid,
       g.id as lineaid,
+      1 as path_id,
+      ".$nodosig." as path_seq,
       g.tipo,
       g.nombre,
       case
@@ -921,7 +929,7 @@ join public.indec_e0211linea linea on ruteo.edge = linea.id
                   'entremanzanas_punto_interseccion' => $wkt,
         				  'pgr_verticeid_old'=>$pgr_verticeid_old,
                   'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
-                  'pgr_ruteo_res' => array($linestring_ruteo_res)
+                  'pgr_ruteo_res' => array($linestring_ruteo_res[0])
 
 
 
@@ -938,13 +946,15 @@ join public.indec_e0211linea linea on ruteo.edge = linea.id
     		}
 
   }
+
+
   elseif ( !empty($mzaSig   ) ) {
 
 
+    $linestring_ruteo_res = array();
 
 
-
-			foreach($mbd->query( "
+		foreach($mbd->query( "
 		SELECT
 		distinct
 
@@ -1040,14 +1050,15 @@ join public.indec_e0211linea linea on ruteo.edge = linea.id
                 case
                 when linea.mzad like '%".$mzaAct."' then linea.hastad
                 else linea.hastai
-                end hasta
+                end hasta,
+                *
         from ruteo
         join public.indec_e0211linea linea on ruteo.edge = linea.id
           ";
 
       $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
       $pgr_ruteo->execute();
-      $pgr_ruteo_res2 = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
+      $linestring_ruteo_res = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
 
     } elseif ( $mzaCantRutas == 1) {
 
@@ -1065,7 +1076,7 @@ join public.indec_e0211linea linea on ruteo.edge = linea.id
 		    'entremanzanas_punto_interseccion' => $wkt,
 			  'pgr_verticeid_old'=>$pgr_verticeid_old,
         'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
-        'pgr_ruteo_res' => array($pgr_ruteo_res2)
+        'pgr_ruteo_res' => array($linestring_ruteo_res[0])
 
 		  ];
 
@@ -1083,6 +1094,7 @@ else {
 
 
     $linestring_ruteo_res = array();
+
 
     $pgr_ruteo_sql = "
     SELECT * FROM pgr_TSP(
@@ -1133,6 +1145,8 @@ else {
         SELECT DISTINCT
         ".$mzaAct." as mzaid,
         g.id as lineaid,
+        1 as path_id,
+        ".$nodosig." as path_seq,
         g.tipo,
         g.nombre,
         case
@@ -1144,8 +1158,10 @@ else {
         when  g.mzad like '%".$mzaAct."' then g.hastad
         else g.hastai
         end hasta
+
         FROM
         public.indec_e0211linea g
+
 
         join
         ( select * FROM indec_e0211linea_vertices_pgr where id in (".$nodo1.", ".$nodo2.") ) v
@@ -1177,7 +1193,7 @@ else {
     //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
     'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
     'pgr_verticeid' => '',
-    'pgr_ruteo_res' => array($linestring_ruteo_res)
+    'pgr_ruteo_res' => array($linestring_ruteo_res[0])
 
   ];
 
