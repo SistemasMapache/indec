@@ -539,6 +539,7 @@ order by cnombre asc,hn asc,hp desc, hd asc
 
 
 ---- listado de viviendas ordenadas
+with ruteo5 as (
 with ruteo4 as (
 with ruteo3 as (
 with ruteo2 as (
@@ -616,12 +617,16 @@ case when altura_orderby = 'HASTA' then geoc.hn end desc,
 case when altura_orderby = 'DESDE' then geoc.hn end asc,
 h4,hp ,hd) seqid_por_segmentolinea,
 
+
 geoc.ref_id as geocref_id,
 geoc.id as geocid,
-geoc.hn,h4,hp,hd,
-altura_start,
-altura_orderby,
-paridad,
+geoc.hn as geochn,
+geoc.cnombre as geoccnombre,
+geoc.h4 as geoch4,
+geoc.hp as geochp,
+geoc.hd as geocdh,
+geoc.geom as geocgeom,
+
 ruteo3.*
 
 from ruteo3
@@ -637,6 +642,29 @@ h4,hp ,hd
 )
 
 select
+
+ntile((select count(distinct lineaid)::int from ruteo4)) over (order by seqid_total) cortecensista_por_ntile_cant_segmentos,
+1 + ((seqid_total - 1) % 25) as cortecensista_cada20viviendas,
+( select max(seqid_total) / count(distinct lineaid) from ruteo4 ) totviviendas_div_segmentos,
+
 *
 from ruteo4
+order by seqid_total
+
+
+)
+
+select
+
+(
+select
+count(cortecensista_por_ntile_cant_segmentos) as cant_cortecensista_por_ntile
+from ruteo5 b where b.cortecensista_por_ntile_cant_segmentos = ruteo5.cortecensista_por_ntile_cant_segmentos
+group by cortecensista_por_ntile_cant_segmentos
+),
+*
+
+
+
+from ruteo5
 order by seqid_total
