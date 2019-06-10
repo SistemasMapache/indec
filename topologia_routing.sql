@@ -531,3 +531,112 @@ viv.mza_comuna = 58 and
 viv.cnombre = callealt.nombrecalle and
 viv.hn between callealt.desde and callealt.hasta
 order by cnombre asc,hn asc,hp desc, hd asc
+
+
+
+
+
+
+
+---- listado de viviendas ordenadas
+with ruteo4 as (
+with ruteo3 as (
+with ruteo2 as (
+
+    with ruteo as ( SELECT * FROM pgr_ksp (
+      'SELECT
+       id,
+       source, target,
+       st_length(geomline::geography, true)/100000 as cost,
+       st_length(geomline::geography, true)/100000 as reverse_cost
+       FROM
+       public.indec_e0211linea
+       WHERE
+       (
+         mzai like ''%0108056'' or
+         mzad like ''%0108056'' )',
+         68,
+         92,
+         2,
+         true
+    ) where edge > 0
+
+    )
+  select
+  56 as mzaid,
+  linea.id as lineaid,
+  linea.tipo,
+  linea.nombre,
+    case
+          when linea.mzad like '%56' then linea.desded
+          else linea.desdei
+          end desde,
+
+          case
+          when linea.mzad like '%56' then linea.hastad
+          else linea.hastai
+          end hasta,
+
+(
+select hn from public.indec_geocoding_viviendas_indec geocode where ref_id = ruteo.edge
+order by st_distance ( geocode.geom , ( select distinct the_geom from public.indec_e0211linea_vertices_pgr where id = 68 limit 1) ) limit 1
+) as hn,
+
+
+  ruteo.*
+  from ruteo
+  join public.indec_e0211linea linea on ruteo.edge = linea.id
+
+)
+
+	select
+
+	*,
+
+	CASE when ABS(hn - desde) < ABS(hn - hasta) then desde else hasta end altura_start,
+	CASE when ABS(hn - desde) < ABS(hn - hasta) then 'DESDE' else 'HASTA'  end altura_orderby,
+	CASE when MOD (desde::integer, 2) = 0 then 'PAR' else 'IMPAR' end as paridad
+
+	from ruteo2
+
+)
+
+
+select
+
+ROW_NUMBER () OVER (ORDER BY seq,
+cnombre,
+case when altura_orderby = 'HASTA' then geoc.hn end desc,
+case when altura_orderby = 'DESDE' then geoc.hn end asc,
+h4,hp ,hd) seqid_total,
+
+ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY seq,
+cnombre,
+case when altura_orderby = 'HASTA' then geoc.hn end desc,
+case when altura_orderby = 'DESDE' then geoc.hn end asc,
+h4,hp ,hd) seqid_por_segmentolinea,
+
+geoc.ref_id as geocref_id,
+geoc.id as geocid,
+geoc.hn,h4,hp,hd,
+altura_start,
+altura_orderby,
+paridad,
+ruteo3.*
+
+from ruteo3
+join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
+and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
+
+order by
+seq,
+cnombre,
+case when altura_orderby = 'HASTA' then geoc.hn end desc,
+case when altura_orderby = 'DESDE' then geoc.hn end asc,
+h4,hp ,hd
+)
+
+select
+*
+from ruteo4
+order by seqid_total
