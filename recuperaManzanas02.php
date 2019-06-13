@@ -51,7 +51,7 @@ $bordes_fracciones_sql = "
       FROM indec_e0211poligono
       GROUP BY prov||depto||codloc||frac||radio
       having prov||depto||codloc||frac||radio in (
-        '020110100801'
+        '020110100108'
         )
     )
       SELECT

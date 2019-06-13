@@ -31,6 +31,15 @@ if ( isset( $_GET["fr"]) ) {
   $fr = $fr['fr'];
 }
 
+//pdcl
+if ( isset( $_GET["pdcl"]) ) {
+  $pdcl = htmlspecialchars($_GET["pdcl"]);
+} else {
+  $pdcl = getopt(null, ["pdcl:"]);
+  $pdcl = $pdcl['pdcl'];
+}
+
+
 // Arrays
 $arrayMZAOK = array();
 $arrayMZAMIDJOIN = array();
@@ -762,6 +771,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
     		 ) as $fila) {
 
+
           // punto de interseccion de manzana act y sig.
 					$wkt = $fila['wktnode'];
 
@@ -792,6 +802,9 @@ if ( $mzaCantRutas == 2) {
 
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
   $pgr_ruteo_sql = "
+
+with ruteo3 as (
+with ruteo2 as (
     with ruteo as ( SELECT * FROM pgr_ksp (
       'SELECT
        id,
@@ -825,10 +838,102 @@ if ( $mzaCantRutas == 2) {
           when linea.mzad like '%".$mzaAct."' then linea.hastad
           else linea.hastai
           end hasta,
+
+          (
+          select hn from public.indec_geocoding_viviendas_indec geocode where ref_id = ruteo.edge
+          order by st_distance ( geocode.geom , ( select distinct the_geom from public.indec_e0211linea_vertices_pgr where id = ruteo.node limit 1) ) limit 1
+          ) as hn,
+
+
   ruteo.*
   from ruteo
   join public.indec_e0211linea linea on ruteo.edge = linea.id
+
+)
+
+
+
+	select
+
+
+	(select st_astext(ST_CollectionHomogenize(geom)) from public.indec_e0211linea l where l.id = edge),
+	(
+		select ST_AsText(ST_CollectionHomogenize(ST_Boundary(ST_Union(geom)))) boundary_geom_astext FROM indec_e0211poligono
+			where prov||depto||codloc||frac||radio in (
+			'".$pdcl.$fr."'
+			)
+		)
+	,
+
+	ST_GeometryType(
+        			st_intersection(
+		(
+		select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
+		),
+
+		(
+		select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
+			where prov||depto||codloc||frac||radio in (
+			'".$pdcl.$fr."'
+			)
+		)        			)
+        		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
+	,
+
+
+
+	edge as edge2,
+
+	*,
+
+	CASE when ABS(hn - desde) < ABS(hn - hasta) then desde else hasta end altura_start,
+	CASE when ABS(hn - desde) < ABS(hn - hasta) then 'DESDE' else 'HASTA'  end altura_orderby,
+	CASE when MOD (desde::integer, 2) = 0 then 'PAR' else 'IMPAR' end as paridad
+
+	from ruteo2
+
+)
+
+
+select
+
+ROW_NUMBER () OVER (ORDER BY seq,
+cnombre,
+case when altura_orderby = 'HASTA' then geoc.hn end desc,
+case when altura_orderby = 'DESDE' then geoc.hn end asc,
+h4,hp ,hd) seqid_total,
+
+ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY seq,
+cnombre,
+case when altura_orderby = 'HASTA' then geoc.hn end desc,
+case when altura_orderby = 'DESDE' then geoc.hn end asc,
+h4,hp ,hd) seqid_por_segmentolinea,
+
+
+geoc.ref_id as geocref_id,
+geoc.id as geocid,
+geoc.hn as geochn,
+geoc.cnombre as geoccnombre,
+geoc.h4 as geoch4,
+geoc.hp as geochp,
+geoc.hd as geocdh,
+geoc.geom as geocgeom,
+
+ruteo3.*
+
+from ruteo3
+join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
+and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
+
+order by
+seq,
+cnombre,
+case when altura_orderby = 'HASTA' then geoc.hn end desc,
+case when altura_orderby = 'DESDE' then geoc.hn end asc,
+h4,hp ,hd
   ";
+
+  echo $pgr_ruteo_sql;
   $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $pgr_ruteo->execute();
   $linestring_ruteo_res = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);

@@ -539,11 +539,16 @@ order by cnombre asc,hn asc,hp desc, hd asc
 
 
 ---- listado de viviendas ordenadas
+
+
+---- listado de viviendas ordenadas
 with ruteo5 as (
 with ruteo4 as (
 with ruteo3 as (
 with ruteo2 as (
 
+
+    -- pgr_ksp
     with ruteo as ( SELECT * FROM pgr_ksp (
       'SELECT
        id,
@@ -562,7 +567,12 @@ with ruteo2 as (
          true
     ) where edge > 0
 
+
+
     )
+
+
+  --ruteo2
   select
   56 as mzaid,
   linea.id as lineaid,
@@ -591,6 +601,35 @@ order by st_distance ( geocode.geom , ( select distinct the_geom from public.ind
 )
 
 	select
+
+
+	(select st_astext(ST_CollectionHomogenize(geom)) from public.indec_e0211linea l where l.id = edge),
+	(
+		select ST_AsText(ST_CollectionHomogenize(ST_Boundary(ST_Union(geom)))) boundary_geom_astext FROM indec_e0211poligono
+			where prov||depto||codloc||frac||radio in (
+			'020110100108'
+			)
+		)
+	,
+
+	ST_GeometryType(
+        			st_intersection(
+		(
+		select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
+		),
+
+		(
+		select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
+			where prov||depto||codloc||frac||radio in (
+			'020110100108'
+			)
+		)        			)
+        		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
+	,
+
+
+
+	edge as edge2,
 
 	*,
 
@@ -663,8 +702,6 @@ from ruteo5 b where b.cortecensista_por_ntile_cant_segmentos = ruteo5.cortecensi
 group by cortecensista_por_ntile_cant_segmentos
 ),
 *
-
-
 
 from ruteo5
 order by seqid_total
