@@ -922,7 +922,7 @@ geoc.geom as geocgeom,
 ruteo3.*
 
 from ruteo3
-join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
+left join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
 and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
 
 order by
@@ -1243,7 +1243,7 @@ h4,hp ,hd
       ruteo3.*
 
       from ruteo3
-      join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
+      left join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
       and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
 
       order by
