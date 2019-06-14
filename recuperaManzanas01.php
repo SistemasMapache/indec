@@ -897,11 +897,6 @@ with ruteo2 as (
 
 select
 
-ROW_NUMBER () OVER (ORDER BY seq,
-cnombre,
-case when altura_orderby = 'HASTA' then geoc.hn end desc,
-case when altura_orderby = 'DESDE' then geoc.hn end asc,
-h4,hp ,hd) seqid_total,
 
 ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY seq,
 cnombre,
@@ -1341,11 +1336,6 @@ h4,hp ,hd
 
       select
 
-      ROW_NUMBER () OVER (ORDER BY seq,
-      cnombre,
-      case when altura_orderby = 'HASTA' then geoc.hn end desc,
-      case when altura_orderby = 'DESDE' then geoc.hn end asc,
-      h4,hp ,hd) seqid_total,
 
       ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY seq,
       cnombre,
