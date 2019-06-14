@@ -1,4 +1,5 @@
 <?php
+
 header('Content-Type: application/json');
 
 //check
@@ -643,7 +644,7 @@ $arrayMZAINNERLine = rtrim($arrayMZAINNERLine, ', ');
 
 
 
-
+//start
 
 $respuestamza = [];
 
@@ -798,8 +799,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 
 $linestring_ruteo_res = array();
-
-
+$linestring_ruteo_res_order_true = array();
+$linestring_ruteo_res_order_false = array();
 
 if ( $mzaCantRutas == 2) {
 
@@ -931,6 +932,37 @@ case when altura_orderby = 'DESDE' then geoc.hn end asc,
 h4,hp ,hd
   ";
 
+
+  $linestring_ruteo = $mbd->prepare($pgr_ruteo_sql);
+  $linestring_ruteo->execute();
+
+  while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
+
+    if ($fila['boundaryradio_intersecta'] == true) {
+      array_push(
+        $linestring_ruteo_res_order_true,
+        [
+          'geocref_id'               => $fila['geocref_id'],
+          'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+          'geoccnombre'              => $fila['geoccnombre'],
+          'geochn'                   => $fila['geochn']
+        ]
+      );
+    }
+
+    else {
+      array_push(
+        $linestring_ruteo_res_order_false,
+        [
+          'geocref_id'               => $fila['geocref_id'],
+          'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+          'geoccnombre'              => $fila['geoccnombre'],
+          'geochn'                   => $fila['geochn']
+        ]
+      );
+    }
+
+  }
 
   $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $pgr_ruteo->execute();
@@ -1136,7 +1168,40 @@ h4,hp ,hd
 
       $linestring_ruteo = $mbd->prepare($linestring_sql);
       $linestring_ruteo->execute();
-      array_push($linestring_ruteo_res,$linestring_ruteo->fetchAll(PDO::FETCH_ASSOC));
+
+      while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
+
+        if ($fila['boundaryradio_intersecta'] == 'true') {
+          array_push(
+            $linestring_ruteo_res_order_true,
+            [
+              'geocref_id'               => $fila['edge'],
+              'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+              'geoccnombre'              => $fila['geoccnombre'],
+              'geochn'                   => $fila['geochn']
+            ]
+          );
+        }
+
+        else {
+          array_push(
+            $linestring_ruteo_res_order_false,
+            [
+              'geocref_id'               => $fila['edge'],
+              'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+              'geoccnombre'              => $fila['geoccnombre'],
+              'geochn'                   => $fila['geochn']
+            ]
+          );
+        }
+
+      }
+
+
+      $linestring_ruteo = $mbd->prepare($linestring_sql);
+      $linestring_ruteo->execute();
+      array_push($linestring_ruteo_res, $linestring_ruteo->fetchAll(PDO::FETCH_ASSOC));
+
 
 
   }
@@ -1156,15 +1221,10 @@ h4,hp ,hd
                   'entremanzanas_punto_interseccion' => $wkt,
         				  'pgr_verticeid_old'=>$pgr_verticeid_old,
                   'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
-                  'pgr_ruteo_res' => array($linestring_ruteo_res)
-
-
-
-
+                  'pgr_ruteo_res' => $linestring_ruteo_res,
+                  'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
+                  'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
                 ];
-
-
-
 
 
 
@@ -1179,6 +1239,8 @@ h4,hp ,hd
 
 
     $linestring_ruteo_res = array();
+    $linestring_ruteo_res_order_true = array();
+    $linestring_ruteo_res_order_false = array();
 
 
 		foreach($mbd->query( "
@@ -1371,7 +1433,36 @@ h4,hp ,hd
       h4,hp ,hd
       ";
 
+      $linestring_ruteo = $mbd->prepare($pgr_ruteo_sql);
+      $linestring_ruteo->execute();
 
+      while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
+
+        if ($fila['boundaryradio_intersecta'] == true) {
+          array_push(
+            $linestring_ruteo_res_order_true,
+            [
+              'geocref_id'               => $fila['edge'],
+              'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+              'geoccnombre'              => $fila['geoccnombre'],
+              'geochn'                   => $fila['geochn']
+            ]
+          );
+        }
+
+        else {
+          array_push(
+            $linestring_ruteo_res_order_false,
+            [
+              'geocref_id'               => $fila['edge'],
+              'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+              'geoccnombre'              => $fila['geoccnombre'],
+              'geochn'                   => $fila['geochn']
+            ]
+          );
+        }
+
+      }
 
       $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
       $pgr_ruteo->execute();
@@ -1381,7 +1472,7 @@ h4,hp ,hd
 
     }
 
-		  // Resultados por manzana
+		  // Resultados por manzana middle
 		  $respuestamza[$x] = [
 		    'radio' => $fr,
         'manzana_cant'=> count($arrayMZAOK),
@@ -1394,7 +1485,9 @@ h4,hp ,hd
 		    'entremanzanas_punto_interseccion' => $wkt,
 			  'pgr_verticeid_old'=>$pgr_verticeid_old,
         'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
-        'pgr_ruteo_res' => array($linestring_ruteo_res)
+        'pgr_ruteo_res' => $linestring_ruteo_res,
+        'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
+        'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
 
 		  ];
 
@@ -1412,7 +1505,8 @@ else {
 
 
     $linestring_ruteo_res = array();
-
+    $linestring_ruteo_res_order_true = array();
+    $linestring_ruteo_res_order_false = array();
 
     $pgr_ruteo_sql = "
     SELECT * FROM pgr_TSP(
@@ -1602,62 +1696,41 @@ else {
 
 
 
+              $linestring_ruteo = $mbd->prepare($linestring_sql);
+              $linestring_ruteo->execute();
 
-        $linestring_ruteo = $mbd->prepare($linestring_sql);
-        $linestring_ruteo->execute();
-        $linestring_ruteoresultado = $linestring_ruteo->fetchAll(PDO::FETCH_ASSOC);
+              while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
 
+                if ($fila['boundaryradio_intersecta'] == 'true') {
+                  array_push(
+                    $linestring_ruteo_res_order_true,
+                    [
+                      'geocref_id'               => $fila['edge'],
+                      'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+                      'geoccnombre'              => $fila['geoccnombre'],
+                      'geochn'                   => $fila['geochn']
+                    ]
+                  );
+                }
 
-        array_push($linestring_ruteo_res,$linestring_ruteoresultado);
+                else {
+                  array_push(
+                    $linestring_ruteo_res_order_false,
+                    [
+                      'geocref_id'               => $fila['edge'],
+                      'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
+                      'geoccnombre'              => $fila['geoccnombre'],
+                      'geochn'                   => $fila['geochn']
+                    ]
+                  );
+                }
 
-
-        // listado de viviendas
-    /*
-
-    -- ejemplo de listado de viviendas segun segmento linea de manzana por recorrido
-
-    with callealt as  (
-            SELECT DISTINCT
-            58 as mzaid,
-            g.id as lineaid,
-            1 as path_id,
-            1 as path_seq,
-            g.tipo as tipocalle,
-            g.nombre as nombrecalle,
-            case
-            when  g.mzad like '%58' then g.desded
-            else g.desdei
-            end desde,
-
-            case
-            when  g.mzad like '%58' then g.hastad
-            else g.hastai
-            end hasta,
-    	*
-            FROM
-            public.indec_e0211linea g
+              }
 
 
-            join
-            ( select * FROM indec_e0211linea_vertices_pgr where id in (99, 84) ) v
-            on
-
-            ( g.source = 99 and g.target = 84 ) or
-            ( g.source = 84 and g.target = 99 )
-
-    )
-
-    select * from
-
-    indec_comuna11 viv
-
-    join callealt
-    on
-    viv.mza_comuna = 58 and
-    viv.cnombre = callealt.nombrecalle and
-    viv.hn between callealt.desde and callealt.hasta
-    order by cnombre asc,hn asc,hp desc, hd asc
-    */
+              $linestring_ruteo = $mbd->prepare($linestring_sql);
+              $linestring_ruteo->execute();
+              array_push($linestring_ruteo_res, $linestring_ruteo->fetchAll(PDO::FETCH_ASSOC));
 
 
     }
@@ -1679,7 +1752,9 @@ else {
     //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
     'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
     'pgr_verticeid' => '',
-    'pgr_ruteo_res' => array($linestring_ruteo_res)
+    'pgr_ruteo_res' => $linestring_ruteo_res,
+    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
+    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
 
   ];
 
@@ -1695,10 +1770,13 @@ $mbd = null;
 $respuesta = [
 'fraccionradio' => $fr,
 'orden_mzas' =>$arrayMZAOK,
-'orden_detalle ' =>$respuestamza
+'orden_detalle' =>$respuestamza,
+'linestring_ruteo_res_order'=>$linestring_ruteo_res_order
 ];
 
-echo json_encode( $respuesta);
+
+echo json_encode($respuesta);
+
 
 } catch (PDOException $e) {
 
@@ -1710,52 +1788,10 @@ echo json_encode( $respuesta);
 
 
 
-
-// generacion de recorrido de viviendas por segmentos calle desde hasta.
-
-/*
-\
-with callealt as  (
-        SELECT DISTINCT
-        58 as mzaid,
-        g.id as lineaid,
-        1 as path_id,
-        1 as path_seq,
-        g.tipo as tipocalle,
-        g.nombre as nombrecalle,
-        case
-        when  g.mzad like '%58' then g.desded
-        else g.desdei
-        end desde,
-
-        case
-        when  g.mzad like '%58' then g.hastad
-        else g.hastai
-        end hasta,
-	*
-        FROM
-        public.indec_e0211linea g
+//
 
 
-        join
-        ( select * FROM indec_e0211linea_vertices_pgr where id in (99, 84) ) v
-        on
 
-        ( g.source = 99 and g.target = 84 ) or
-        ( g.source = 84 and g.target = 99 )
 
-)
-
-select * from
-
-indec_comuna11 viv
-
-join callealt
-on
-viv.mza_comuna = 58 and
-viv.cnombre = callealt.nombrecalle and
-viv.hn between callealt.desde and callealt.hasta
-order by cnombre asc,hn asc,hp desc, hd asc
-*/
 
 ?>
