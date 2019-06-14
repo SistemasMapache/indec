@@ -1770,8 +1770,7 @@ $mbd = null;
 $respuesta = [
 'fraccionradio' => $fr,
 'orden_mzas' =>$arrayMZAOK,
-'orden_detalle' =>$respuestamza,
-'linestring_ruteo_res_order'=>$linestring_ruteo_res_order
+'orden_detalle' =>$respuestamza
 ];
 
 
