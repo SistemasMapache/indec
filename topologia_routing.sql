@@ -705,3 +705,148 @@ group by cortecensista_por_ntile_cant_segmentos
 
 from ruteo5
 order by seqid_total
+
+
+
+
+
+
+
+
+
+
+---- border sql listado vivienda
+
+
+
+
+      with ruteo3 as (
+
+      with ruteo2 as (
+
+      SELECT DISTINCT
+      57 as mzaid,
+      g.id as edge,
+      1 as path_id,
+      2 as path_seq,
+
+      84 as nodoid,
+      'POINT(5636739 6171901.5)' as nodogeom,
+
+      70 as nodo2id,
+      'POINT(5636863 6171991.5)' as nodo2geom,
+      g.tipo,
+      g.nombre,
+      case
+      when  g.mzad like '%57' then g.desded
+      else g.desdei
+      end desde,
+
+      case
+      when  g.mzad like '%57' then g.hastad
+      else g.hastai
+      end hasta,
+
+      (
+        select hn from public.indec_geocoding_viviendas_indec geocode where ref_id = g.id
+        order by
+          st_distance (
+              geocode.geom ,
+              ( select distinct the_geom from public.indec_e0211linea_vertices_pgr where id = 84 limit 1) )
+        limit 1
+      ) as hn
+
+
+      FROM
+      public.indec_e0211linea g
+
+      join
+      ( select * FROM indec_e0211linea_vertices_pgr where id in (84, 70) ) v
+      on
+
+      ( g.source = 84 and g.target = 70 ) or
+      ( g.source = 70 and g.target = 84 )
+
+
+      )
+
+
+
+
+
+
+      	select
+
+
+      	(select st_astext(ST_CollectionHomogenize(geom)) from public.indec_e0211linea l where l.id = edge),
+      	(
+      		select ST_AsText(ST_CollectionHomogenize(ST_Boundary(ST_Union(geom)))) boundary_geom_astext FROM indec_e0211poligono
+      			where prov||depto||codloc||frac||radio in (
+      			'020110100108'
+      			)
+      		)
+      	,
+
+      	ST_GeometryType(
+              			st_intersection(
+      		(
+      		select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
+      		),
+
+      		(
+      		select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
+      			where prov||depto||codloc||frac||radio in (
+      			'020110100108'
+      			)
+      		)        			)
+              		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
+      	,
+
+
+
+      	edge as edge2,
+
+      	*,
+
+      	CASE when ABS(hn - desde) < ABS(hn - hasta) then desde else hasta end altura_start,
+      	CASE when ABS(hn - desde) < ABS(hn - hasta) then 'DESDE' else 'HASTA'  end altura_orderby,
+      	CASE when MOD (desde::integer, 2) = 0 then 'PAR' else 'IMPAR' end as paridad
+
+      	from ruteo2
+
+
+      )
+
+
+      select
+
+
+
+      ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY
+      cnombre,
+      case when altura_orderby = 'HASTA' then geoc.hn end desc,
+      case when altura_orderby = 'DESDE' then geoc.hn end asc,
+      h4,hp ,hd) seqid_por_segmentolinea,
+
+
+      geoc.ref_id as geocref_id,
+      geoc.id as geocid,
+      geoc.hn as geochn,
+      geoc.cnombre as geoccnombre,
+      geoc.h4 as geoch4,
+      geoc.hp as geochp,
+      geoc.hd as geocdh,
+      geoc.geom as geocgeom,
+
+      ruteo3.*
+
+      from ruteo3
+      left join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
+      and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
+
+      order by
+
+      cnombre,
+      case when altura_orderby = 'HASTA' then geoc.hn end desc,
+      case when altura_orderby = 'DESDE' then geoc.hn end asc,
+      h4,hp ,hd
