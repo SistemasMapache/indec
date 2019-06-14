@@ -668,10 +668,13 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
   if ( $x+1 == count($arrayMZAOK) ) {
     $mzaCantRutas = 1;
+    $mzaTipoPath = 'end';
   } elseif ( $x+1 == 1 ) {
     $mzaCantRutas = 1;
+    $mzaTipoPath = 'start';
   } else {
     $mzaCantRutas = 2;
+    $mzaTipoPath ='mid';
   }
 
 
@@ -1145,6 +1148,7 @@ h4,hp ,hd
                   'radio' => $fr,
                   'manzana_cant'=> count($arrayMZAOK),
                   'manzana_cantrutas'=> $mzaCantRutas,
+                  'mzaTipoPath'=> $mzaTipoPath,
                   'manzana_pos' => $x+1,
                   'manzana_act'=>$mzaAct,
                   'manzana_sig' => $mzaSig,
@@ -1382,6 +1386,7 @@ h4,hp ,hd
 		    'radio' => $fr,
         'manzana_cant'=> count($arrayMZAOK),
         'manzana_cantrutas'=> $mzaCantRutas,
+        'mzaTipoPath'=> $mzaTipoPath,
         'manzana_pos' => $x+1,
 		    'manzana_act'=>$mzaAct,
 		    'manzana_sig' => $mzaSig,
@@ -1665,6 +1670,7 @@ else {
     'radio' => $fr,
     'manzana_cant'=> count($arrayMZAOK),
     'manzana_cantrutas'=> $mzaCantRutas,
+    'mzaTipoPath'=> $mzaTipoPath,
     'manzana_pos' => $x+1,
     'manzana_act'=>$mzaAct,
     'manzana_sig'=> null,
