@@ -56,134 +56,122 @@ try {
     $mbd = new PDO('pgsql:host=localhost;dbname=gisdata', 'indec', 'indec');
 
     foreach($mbd->query( "
+      with mzas as
+      (
+
+      WITH const (pdclfr,fr) as ( VALUES ('".$pdcl.$fr."','".$fr."') )
+
+    	SELECT
+    		pdclfr,
+        fr,
+
+    		pol.mzatxt mzaid,
+
+    		ST_GeometryType(
+    		st_intersection(
+    		pol.geom,
+    		(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = pdclfr)
+    		)
+    		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection')
+    		as tipo,
+
+    		(
+    		select
+    		array_to_json(array_agg(polNext.mzatxt))
+    		from public.indec_e0211poligono as polNext
+    			where
+    			prov||depto||codloc||frac||radio = pdclfr and
+    			st_intersects(pol.geom,polNext.geom)
+    			and ST_GeometryType(st_intersection(pol.geom,polNext.geom)) in ('ST_LineString', 'ST_MultiLineString')
+    		) as mza_touches,
+
+    		(
+    		select
+    		array_to_json(array_agg(ST_Distance(st_centroid(pol.geom),ST_Centroid(polNext.geom))))
+    		from public.indec_e0211poligono as polNext
+    			where
+    			prov||depto||codloc||frac||radio = pdclfr and
+    			st_touches(pol.geom,polNext.geom)
+    			and ST_GeometryType(st_intersection(pol.geom,polNext.geom)) in ('ST_LineString', 'ST_MultiLineString')
+    		) as mza_touchescentdist
 
 
-with mzas as
-(
-	WITH const (fr) as (
-	   values ('".$fr."')
-	)
+    		,
+    		ST_GeometryType(
+    			st_intersection(
+    			pol.geom,
+    			(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = pdclfr)
+    			)
+    		) geotype,
 
-	SELECT
-		fr,
-
-		pol.mzatxt mzaid,
-
-		ST_GeometryType(
-		st_intersection(
-		pol.geom,
-		(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = fr)
-		)
-		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection')
-		as tipo,
-
-		(
-		select
-		array_to_json(array_agg(polNext.mzatxt))
-		from public.indec_e0211poligono as polNext
-			where
-			frac||radio = fr and
-			st_intersects(pol.geom,polNext.geom)
-			and ST_GeometryType(st_intersection(pol.geom,polNext.geom)) in ('ST_LineString', 'ST_MultiLineString')
-		) as mza_touches,
-
-		(
-		select
-		array_to_json(array_agg(ST_Distance(st_centroid(pol.geom),ST_Centroid(polNext.geom))))
-		from public.indec_e0211poligono as polNext
-			where
-			frac||radio = fr and
-			st_touches(pol.geom,polNext.geom)
-			and ST_GeometryType(st_intersection(pol.geom,polNext.geom)) in ('ST_LineString', 'ST_MultiLineString')
-		) as mza_touchescentdist
-
-
-		,
-		ST_GeometryType(
-			st_intersection(
-			pol.geom,
-			(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = fr)
-			)
-		) geotype,
-
-
-		st_astext(ST_CollectionExtract(
-		st_intersection(
-		pol.geom,
-		(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = fr)
-		),1)) colex
+    		st_astext(ST_CollectionExtract(
+    		st_intersection(
+    		pol.geom,
+    		(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = pdclfr)
+    		),1)) colex
 
 
 
-	FROM
-		const,
-		public.indec_e0211poligono as pol
-	WHERE
+    	FROM
+    		const,
+    		public.indec_e0211poligono as pol
+    	WHERE
 
 
-		pol.frac||radio = fr and
+    		prov||depto||codloc||frac||radio = pdclfr and
 
-		ST_GeometryType(
-			st_intersection(
-			pol.geom,
-			(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = fr)
-			)
-		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection')
+    		ST_GeometryType(
+    			st_intersection(
+    			pol.geom,
+    			(select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = pdclfr)
+    			)
+    		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection')
 
-)
+    )
 
-select mzaid, tipo,  mza_touches ,mza_touchescentdist , geotype
-from mzas
-where colex in ('POINT EMPTY','MULTIPOINT EMPTY')
-ORDER BY length(mza_touches::text)"
-
-
- ) as $fila) {
-
-	//data : manzana id y manzanas intersectadas
-	array_push($data, array('mzaid'=>json_decode($fila['mzaid']) , 'touches' => json_decode($fila['mza_touches'])));
+    select mzaid, tipo, mza_touches ,mza_touchescentdist , geotype
+    from mzas
+    where colex in ('POINT EMPTY','MULTIPOINT EMPTY')
+    ORDER BY length(mza_touches::text)"
 
 
-}
+    ) as $fila) {
+
+  	//data : manzana id y manzanas intersectadas
+  	array_push($data, array('mzaid'=>json_decode($fila['mzaid']) , 'touches' => json_decode($fila['mza_touches'])));
+
+    }
 
 
 
 for($i = 0; $i < count($data); ++$i) {
 
 
-
+  //manzanas que tocan
 	foreach ( $data[$i]['touches'] as $valtouch) {
-
-
-
-
-
 
 		if (empty($filacandidata)) {
 
-	    array_push($arrayMZAOK,$data[$i]['mzaid']);
-
-
-
-
+	  array_push($arrayMZAOK,$data[$i]['mzaid']);
 
 		foreach($mbd->query("
 		SELECT
 		mzatxt
 		FROM public.indec_e0211poligono
-		WHERE frac||radio = '".$fr."' and
+		WHERE
+    prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and
 		st_intersects(
 		geom,
 			(
 			SELECT
 			ST_CollectionExtract(
 				st_intersection(
-				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = '".$fr."')
+				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."')
 				)
 			,2)
 
 			FROM public.indec_e0211poligono
-			WHERE frac||radio = '".$fr."' and mzatxt = '".$valtouch."'
+			WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = '".$valtouch."'
 			)
 		)
 		and mzatxt not in (".implode(",", $arrayMZAOK).",".$valtouch.") limit 1" ) as $filaposible) {
@@ -191,9 +179,6 @@ for($i = 0; $i < count($data); ++$i) {
 			if (empty($filaposible)) {} else {
 
 				$filacandidata = $filaposible['mzatxt'];
-
-
-
 
 				if (!in_array($valtouch, $arrayMZAOK)) {
 					array_push($arrayMZAOK,$valtouch);
@@ -204,65 +189,52 @@ for($i = 0; $i < count($data); ++$i) {
 
 				$arrayMZAOK = array_unique($arrayMZAOK);
 
-
-
 			}
-
-
 
 		}
 
 } else {
 
-		foreach($mbd->query("
+		foreach(
+    $mbd->query("
 		SELECT
 		mzatxt
 		FROM public.indec_e0211poligono
-		WHERE frac||radio = '".$fr."' and
+		WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and
 		st_intersects(
 		geom,
 			(
 			SELECT
 			ST_CollectionExtract(
 				st_intersection(
-				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = '".$fr."')
+				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."' )
 				)
 			,2)
 
 			FROM public.indec_e0211poligono
-			WHERE frac||radio = '".$fr."' and mzatxt = '".$filacandidata."'
+			WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = '".$filacandidata."'
 			)
 		)
-		and mzatxt not in (".implode(",", $arrayMZAOK).",".$filacandidata.")" ) as $filaposible) {
-
-
+		and mzatxt not in (".implode(",", $arrayMZAOK).",".$filacandidata.")"
+    ) as $filaposible) {
 
 			if (empty($filaposible)) {} else {
 				$filacandidata = $filaposible['mzatxt'];
 
-
-
 				if (!in_array($filaposible['mzatxt'], $arrayMZAOK)) {
 					array_push($arrayMZAOK,$filacandidata);
 				}
-
-
-
 				$arrayMZAOK = array_unique($arrayMZAOK);
-
-
 			}
 
-
-
 		}
-}
+} //else
 
 
 
 
-	}
-}
+} //touches
+} //for
 
 $arrayMZAOK = array_unique($arrayMZAOK);
 
@@ -289,19 +261,17 @@ Generar un subradio de manzanas no boundaries repitiendo el proceso excluyendo l
 Teniendo como secuencial la ultima del array boundaries y la primera adyacente de las manzanas no boundaries.
 */
 
+foreach($mbd->query( "
 
+    with mzasinner as
+    (
+    WITH const (pdclfr,fr) as (
+       values ('".$pdcl.$fr."','".$fr."')
+    )
 
-
-    foreach($mbd->query( "
-
-with mzasinner as
-(
-	WITH const (fr) as (
-	   values ('".$fr."')
-	)
-
-	SELECT
-		fr,
+  	SELECT
+    pdclfr,
+    fr,
 
 		pol.mzatxt mzaid,
 
@@ -310,7 +280,7 @@ with mzasinner as
 		pol.geom,
 		(select ST_Boundary(st_union(st_setsrid(geom,4326)))
 		 from indec_e0211poligono
-		 where frac||radio = fr
+		 where prov||depto||codloc||frac||radio = pdclfr
 		 and mzatxt not in (".implode(",", $arrayMZAOK).") )
 		)
 		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection')
@@ -323,7 +293,7 @@ with mzasinner as
 		array_to_json(array_agg(polNext.mzatxt))
 		from public.indec_e0211poligono as polNext
 			where
-			frac||radio = fr and
+			prov||depto||codloc||frac||radio = pdclfr and
 			st_intersects(pol.geom,polNext.geom)
 			and ST_GeometryType(st_intersection(pol.geom,polNext.geom)) in ('ST_LineString', 'ST_MultiLineString')
 			and mzatxt not in (".implode(",", $arrayMZAOK).")
@@ -335,7 +305,7 @@ with mzasinner as
 		array_to_json(array_agg(ST_Distance(st_centroid(pol.geom),ST_Centroid(polNext.geom))))
 		from public.indec_e0211poligono as polNext
 			where
-			frac||radio = fr and
+			prov||depto||codloc||frac||radio = pdclfr and
 			st_touches(pol.geom,polNext.geom)
 			and ST_GeometryType(st_intersection(pol.geom,polNext.geom)) in ('ST_LineString', 'ST_MultiLineString')
 			and mzatxt not in (".implode(",", $arrayMZAOK).")
@@ -347,7 +317,7 @@ with mzasinner as
 			pol.geom,
 			(select ST_Boundary(st_union(st_setsrid(geom,4326)))
 			 from indec_e0211poligono
-			 where frac||radio = fr and
+			 where prov||depto||codloc||frac||radio = pdclfr and
 			 mzatxt not in (".implode(",", $arrayMZAOK).") )
 			)
 		) geotype
@@ -358,14 +328,14 @@ with mzasinner as
 	WHERE
 
 
-		pol.frac||radio = fr and
+		prov||depto||codloc||frac||radio = pdclfr and
 
 		ST_GeometryType(
 			st_intersection(
 			pol.geom,
 			(select ST_Boundary(st_union(st_setsrid(geom,4326)))
 			 from indec_e0211poligono
-			 where frac||radio = fr and
+			 where prov||depto||codloc||frac||radio = pdclfr and
 			 mzatxt not in (".implode(",", $arrayMZAOK).") )
 			)
 		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection')
@@ -380,7 +350,7 @@ ORDER BY length(mza_touches::text)"
 
  ) as $fila) {
 
-	array_push($dataInner, array('mzaid'=>json_decode($fila['mzaid']) , 'touches' => json_decode($fila['mza_touches'])));
+	array_push($dataInner, array('mzaid'=>json_decode($fila['mzaid']), 'touches' => json_decode($fila['mza_touches'])));
 
 }
 
@@ -393,55 +363,38 @@ ORDER BY length(mza_touches::text)"
 
 for($i = 0; $i < count($dataInner); ++$i) {
 
-
-
-
 	foreach ( $dataInner[$i]['touches'] as $valtouchInner) {
 
-
-
-
-
-
-
 		if (empty($filacandidataInner)) {
+
 	    array_push($arrayMZAINNER,$dataInner[$i]['mzaid']);
 
+      foreach($mbd->query("
+      SELECT
+      mzatxt
+      FROM public.indec_e0211poligono
+      WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and
+      st_intersects(
+      geom,
+      	(
+      	SELECT
+      	ST_CollectionExtract(
+      		st_intersection(
+      		geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'
+      		and mzatxt not in (".implode(",", $arrayMZAOK).") )
 
+      		)
+      	,2)
 
-		foreach($mbd->query("
-		SELECT
-		mzatxt
-		FROM public.indec_e0211poligono
-		WHERE frac||radio = '".$fr."' and
-		st_intersects(
-		geom,
-			(
-			SELECT
-			ST_CollectionExtract(
-				st_intersection(
-				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = '".$fr."'
-				and mzatxt not in (".implode(",", $arrayMZAOK).") )
-
-				)
-			,2)
-
-			FROM public.indec_e0211poligono
-			WHERE frac||radio = '".$fr."' and mzatxt = '".$valtouchInner."'
-			and mzatxt not in (".implode(",", $arrayMZAOK).")
-			)
-		)
-		and mzatxt not in (".implode(",", $arrayMZAOK).",".implode(",", $arrayMZAINNER).",".$valtouchInner.")" ) as $filaposibleInner) {
-
-
-
-
-
+      	FROM public.indec_e0211poligono
+      	WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = '".$valtouchInner."'
+      	and mzatxt not in (".implode(",", $arrayMZAOK).")
+      	)
+      )
+      and mzatxt not in (".implode(",", $arrayMZAOK).",".implode(",", $arrayMZAINNER).",".$valtouchInner.")" ) as $filaposibleInner) {
 
 			if (empty($filaposibleInner)) {} else {
 				$filacandidataInner = $filaposibleInner['mzatxt'];
-
-
 
 				if (!in_array($valtouchInner, $arrayMZAINNER)) {
 					array_push($arrayMZAINNER,$valtouchInner);
@@ -451,8 +404,6 @@ for($i = 0; $i < count($dataInner); ++$i) {
 				}
 
 				$arrayMZAINNER = array_unique($arrayMZAINNER);
-
-
 
 			}
 
@@ -467,21 +418,21 @@ for($i = 0; $i < count($dataInner); ++$i) {
 		SELECT
 		mzatxt
 		FROM public.indec_e0211poligono
-		WHERE frac||radio = '".$fr."' and
+		WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and
 		st_intersects(
 		geom,
 			(
 			SELECT
 			ST_CollectionExtract(
 				st_intersection(
-				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where frac||radio = '".$fr."'
+				geom, (select ST_Boundary(st_union(st_setsrid(geom,4326))) from indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'
 				and mzatxt not in (".implode(",", $arrayMZAOK).") )
 
 				)
 			,2)
 
 			FROM public.indec_e0211poligono
-			WHERE frac||radio = '".$fr."' and mzatxt = '".$filacandidataInner."'
+			WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = '".$filacandidataInner."'
 			and mzatxt not in (".implode(",", $arrayMZAOK).")
 			)
 		)
@@ -561,7 +512,7 @@ $arrayMZAOKLine = "ST_AsText(ST_MakeLine( ST_GeomFromText('MULTIPOINT(";
   foreach ($arrayMZAOK as $mzaid) {
 
   	foreach($mbd->query( "
-  	SELECT st_X(ST_Centroid(geom)) x, st_Y(ST_Centroid(geom)) y, st_astext(ST_Centroid(geom)) centro  FROM public.indec_e0211poligono WHERE frac||radio = '".$fr."' and mzatxt = ".$mzaid. " limit 1"
+  	SELECT st_X(ST_Centroid(geom)) x, st_Y(ST_Centroid(geom)) y, st_astext(ST_Centroid(geom)) centro  FROM public.indec_e0211poligono WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = ".$mzaid. " limit 1"
   	) as $fila) {
 
   		$arrayMZAOKLine .= $fila['x'].' ';
@@ -598,7 +549,7 @@ if (!empty($arrayMZAMIDJOIN) ) {
 $arrayMZAMIDJOINLine = "ST_AsText(ST_MakeLine( ST_GeomFromText('MULTIPOINT(";
 foreach ($arrayMZAMIDJOIN as $mzaid) {
 	foreach($mbd->query( "
-	SELECT st_X(ST_Centroid(geom)) x, st_Y(ST_Centroid(geom)) y, st_astext(ST_Centroid(geom)) centro  FROM public.indec_e0211poligono WHERE frac||radio = '".$fr."' and mzatxt = ".$mzaid. " limit 1"
+	SELECT st_X(ST_Centroid(geom)) x, st_Y(ST_Centroid(geom)) y, st_astext(ST_Centroid(geom)) centro  FROM public.indec_e0211poligono WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = ".$mzaid. " limit 1"
 	) as $fila) {
 		$arrayMZAMIDJOINLine .= $fila['x'].' ';
 		$arrayMZAMIDJOINLine .= $fila['y'].", ";
@@ -618,17 +569,13 @@ if (!empty($arrayMZAINNER) ) {
 $arrayMZAINNERLine = "ST_AsText(ST_MakeLine( ST_GeomFromText('MULTIPOINT(";
 foreach ($arrayMZAINNER as $mzaid) {
 	foreach($mbd->query( "
-	SELECT st_X(ST_Centroid(geom)) x, st_Y(ST_Centroid(geom)) y, st_astext(ST_Centroid(geom)) centro  FROM public.indec_e0211poligono WHERE frac||radio = '".$fr."' and mzatxt = ".$mzaid. " limit 1"
+	SELECT st_X(ST_Centroid(geom)) x, st_Y(ST_Centroid(geom)) y, st_astext(ST_Centroid(geom)) centro  FROM public.indec_e0211poligono WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."' and mzatxt = ".$mzaid. " limit 1"
 	) as $fila) {
 		$arrayMZAINNERLine .= $fila['x'].' ';
 		$arrayMZAINNERLine .= $fila['y'].", ";
 	}
 }
 $arrayMZAINNERLine = rtrim($arrayMZAINNERLine, ', ');
-
-
-
-
 
 }
 
@@ -694,8 +641,8 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
           st_astext(
             ST_LineMerge(
               st_intersection(
-              (select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaAct."'  ),
-              (select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'  )
+              (select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'  and mzatxt =  '".$mzaAct."'  ),
+              (select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  )
               )
            )
           ) intersect_lineamza,
@@ -706,19 +653,19 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
             st_intersection(
             (
             st_intersection(
-            (select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaAct."'  ),
-            (select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'  )
+            (select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'  and mzatxt =  '".$mzaAct."'  ),
+            (select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  )
             )
             ),
             (
-            select ST_Boundary(st_union(geom)) from indec_e0211poligono where frac||radio = '".$fr."'
+            select ST_Boundary(st_union(geom)) from indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'
             )
            )
          )
           ) intersect_lineabound
 
           FROM  public.indec_e0211poligono
-          WHERE frac||radio = '".$fr."'
+          WHERE prov||depto||codloc||frac||radio = '".$pdcl.$fr."'
           limit 1
 
           )
@@ -732,7 +679,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
             st_area(
               st_intersection(
                 ST_SetSRID(ST_Buffer((dp).geom ,10),4326),
-                ( select distinct st_union(geom) from public.indec_e0211poligono where frac||radio = '".$fr."' )
+                ( select distinct st_union(geom) from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."' )
               )
             ) areaorder,
 
@@ -747,12 +694,12 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
             st_intersection(
             (
             st_intersection(
-            (select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'  ),
-            (select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaTerc."'  )
+            (select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  ),
+            (select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'  and mzatxt =  '".$mzaTerc."'  )
             )
             ),
             (
-            select ST_Boundary(st_union(geom)) from indec_e0211poligono where frac||radio = '".$fr."'
+            select ST_Boundary(st_union(geom)) from indec_e0211poligono where prov||depto||codloc||frac||radio = '".$pdcl.$fr."'
             )
             )
 
@@ -807,146 +754,145 @@ if ( $mzaCantRutas == 2) {
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
   $pgr_ruteo_sql = "
 
-with ruteo3 as (
-with ruteo2 as (
+    with ruteo3 as (
+    with ruteo2 as (
     with ruteo as ( SELECT * FROM pgr_ksp (
-      'SELECT
-       id,
-       source, target,
-       st_length(geomline::geography, true)/100000 as cost,
-       st_length(geomline::geography, true)/100000 as reverse_cost
-       FROM
-       public.indec_e0211linea
-       WHERE
-       (
-         mzai like ''%".$fr.'0'.$mzaAct."'' or
-         mzad like ''%".$fr.'0'.$mzaAct."'' )',
-         ".$pgr_verticeid_old.",
-         ".$pgr_vertix_res['pgr_vertix_id'].",
-         2,
-         true
+    'SELECT
+     id,
+     source, target,
+     st_length(geomline::geography, true)/100000 as cost,
+     st_length(geomline::geography, true)/100000 as reverse_cost
+     FROM
+     public.indec_e0211linea
+     WHERE
+     (
+       mzai like ''%".$fr.'0'.$mzaAct."'' or
+       mzad like ''%".$fr.'0'.$mzaAct."'' )',
+       ".$pgr_verticeid_old.",
+       ".$pgr_vertix_res['pgr_vertix_id'].",
+       2,
+       true
     ) where edge > 0
 
     )
-  select
-  ".$mzaAct." as mzaid,
-  linea.id as lineaid,
-  linea.tipo,
-  linea.nombre,
+    select
+    ".$mzaAct." as mzaid,
+    linea.id as lineaid,
+    linea.tipo,
+    linea.nombre,
     case
-          when linea.mzad like '%".$mzaAct."' then linea.desded
-          else linea.desdei
-          end desde,
+        when linea.mzad like '%".$mzaAct."' then linea.desded
+        else linea.desdei
+        end desde,
 
-          case
-          when linea.mzad like '%".$mzaAct."' then linea.hastad
-          else linea.hastai
-          end hasta,
+        case
+        when linea.mzad like '%".$mzaAct."' then linea.hastad
+        else linea.hastai
+        end hasta,
 
-          (
-          select hn from public.indec_geocoding_viviendas_indec geocode where ref_id = ruteo.edge
-          order by st_distance ( geocode.geom , ( select distinct the_geom from public.indec_e0211linea_vertices_pgr where id = ruteo.node limit 1) ) limit 1
-          ) as hn,
-
-
-  ruteo.*
-  from ruteo
-  join public.indec_e0211linea linea on ruteo.edge = linea.id
-
-)
+        (
+        select hn from public.indec_geocoding_viviendas_indec geocode where ref_id = ruteo.edge
+        order by st_distance ( geocode.geom , ( select distinct the_geom from public.indec_e0211linea_vertices_pgr where id = ruteo.node limit 1) ) limit 1
+        ) as hn,
 
 
+    ruteo.*
+    from ruteo
+    join public.indec_e0211linea linea on ruteo.edge = linea.id
 
-	select
-
-
-	(select st_astext(ST_CollectionHomogenize(geom)) from public.indec_e0211linea l where l.id = edge),
-	(
-		select ST_AsText(ST_CollectionHomogenize(ST_Boundary(ST_Union(geom)))) boundary_geom_astext FROM indec_e0211poligono
-			where prov||depto||codloc||frac||radio in (
-			'".$pdcl.$fr."'
-			)
-		)
-	,
-
-  ST_IsEmpty(
-	ST_CollectionHomogenize(
-	st_intersection(
-	(
-	select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
-	),
-
-	(
-	select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
-	where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
-	)
-	)
-	)
-	) = 'f'
-	and
-
-	ST_GeometryType(
-        			st_intersection(
-		(
-		select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
-		),
-
-		(
-		select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
-			where prov||depto||codloc||frac||radio in (
-			'".$pdcl.$fr."'
-			)
-		)        			)
-        		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
-	,
+    )
 
 
 
-	edge as edge2,
-
-	*,
-
-	CASE when ABS(hn - desde) < ABS(hn - hasta) then desde else hasta end altura_start,
-	CASE when ABS(hn - desde) < ABS(hn - hasta) then 'DESDE' else 'HASTA'  end altura_orderby,
-	CASE when MOD (desde::integer, 2) = 0 then 'PAR' else 'IMPAR' end as paridad
-
-	from ruteo2
-
-)
+    select
 
 
-select
+    (select st_astext(ST_CollectionHomogenize(geom)) from public.indec_e0211linea l where l.id = edge),
+    (
+    select ST_AsText(ST_CollectionHomogenize(ST_Boundary(ST_Union(geom)))) boundary_geom_astext FROM indec_e0211poligono
+    where prov||depto||codloc||frac||radio in (
+    '".$pdcl.$fr."'
+    )
+    )
+    ,
+
+    ST_IsEmpty(
+    ST_CollectionHomogenize(
+    st_intersection(
+    (
+    select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
+    ),
+
+    (
+    select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
+    where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
+    )
+    )
+    )
+    ) = 'f'
+    and
+
+    ST_GeometryType(
+      			st_intersection(
+    (
+    select ST_CollectionHomogenize(geom) from public.indec_e0211linea l where l.id = edge
+    ),
+
+    (
+    select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
+    where prov||depto||codloc||frac||radio in (
+    '".$pdcl.$fr."'
+    )
+    )        			)
+      		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
+    ,
 
 
-ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY seq,
-cnombre,
-case when altura_orderby = 'HASTA' then geoc.hn end desc,
-case when altura_orderby = 'DESDE' then geoc.hn end asc,
-h4,hp ,hd) seqid_por_segmentolinea,
+
+    edge as edge2,
+
+    *,
+
+    CASE when ABS(hn - desde) < ABS(hn - hasta) then desde else hasta end altura_start,
+    CASE when ABS(hn - desde) < ABS(hn - hasta) then 'DESDE' else 'HASTA'  end altura_orderby,
+    CASE when MOD (desde::integer, 2) = 0 then 'PAR' else 'IMPAR' end as paridad
+
+    from ruteo2
+
+    )
 
 
-geoc.ref_id as geocref_id,
-geoc.id as geocid,
-geoc.hn as geochn,
-geoc.cnombre as geoccnombre,
-geoc.h4 as geoch4,
-geoc.hp as geochp,
-geoc.hd as geocdh,
-geoc.geom as geocgeom, st_astext(geoc.geom) as geocgeomtext,
+    select
 
-ruteo3.*
 
-from ruteo3
-left join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
-and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
+    ROW_NUMBER () OVER (PARTITION BY geoc.ref_id ORDER BY seq,
+    cnombre,
+    case when altura_orderby = 'HASTA' then geoc.hn end desc,
+    case when altura_orderby = 'DESDE' then geoc.hn end asc,
+    h4,hp ,hd) seqid_por_segmentolinea,
+    case when geoc.ref_id is null then ruteo3.edge2 else geoc.ref_id end as geocref_id,
+    geoc.id as geocid,
+    case when geoc.hn is not null then geoc.hn else ruteo3.altura_start end as geochn,
+    ruteo3.nombre as geoccnombre,
+    geoc.h4 as geoch4,
+    geoc.hp as geochp,
+    geoc.hd as geocdh,
+    case when geoc.geom is null then  ST_GeomFromText(ruteo3.st_astext) else geoc.geom end as geocgeom,
+    case when geoc.geom is null then  ruteo3.st_astext else st_astext(geoc.geom) end as geocgeomtext,
+    ruteo3.*
 
-order by
-seq,
-cnombre,
-case when altura_orderby = 'HASTA' then geoc.hn end desc,
-case when altura_orderby = 'DESDE' then geoc.hn end asc,
-h4,hp ,hd
+    from ruteo3
+    left join public.indec_geocoding_viviendas_indec geoc on geoc.ref_id = ruteo3.edge
+    and MOD (desde::integer, 2) = MOD (geoc.hn::integer, 2)
+
+    order by
+    seq,
+    cnombre,
+    case when altura_orderby = 'HASTA' then geoc.hn end desc,
+    case when altura_orderby = 'DESDE' then geoc.hn end asc,
+    h4,hp ,hd
   ";
+
 
 
 
@@ -981,10 +927,8 @@ h4,hp ,hd
       );
     }
 
-  }
 
-  echo "@@@@@@@@@".$pgr_ruteo_sql;
-  exit;
+  }
 
   $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $pgr_ruteo->execute();
@@ -1030,7 +974,6 @@ h4,hp ,hd
     ( select distinct st_astext(ST_CollectionHomogenize(the_geom)) from public.indec_e0211linea_vertices_pgr where id = ruteo.node limit 1) as node_geom
     from ruteo
     ";
-
 
 
 
@@ -1177,17 +1120,15 @@ h4,hp ,hd
       case when altura_orderby = 'HASTA' then geoc.hn end desc,
       case when altura_orderby = 'DESDE' then geoc.hn end asc,
       h4,hp ,hd) seqid_por_segmentolinea,
-
-
-      geoc.ref_id as geocref_id,
+      case when geoc.ref_id is null then ruteo3.edge2 else geoc.ref_id end as geocref_id,
       geoc.id as geocid,
-      geoc.hn as geochn,
-      geoc.cnombre as geoccnombre,
+      case when geoc.hn is not null then geoc.hn else ruteo3.altura_start end as geochn,
+      ruteo3.nombre as geoccnombre,
       geoc.h4 as geoch4,
       geoc.hp as geochp,
       geoc.hd as geocdh,
-      geoc.geom as geocgeom, st_astext(geoc.geom) as geocgeomtext,
-
+      case when geoc.geom is null then  ST_GeomFromText(ruteo3.st_astext) else geoc.geom end as geocgeom,
+      case when geoc.geom is null then  ruteo3.st_astext else st_astext(geoc.geom) end as geocgeomtext,
       ruteo3.*
 
       from ruteo3
@@ -1203,6 +1144,8 @@ h4,hp ,hd
 
 
       ";
+
+
 
 
       $linestring_ruteo = $mbd->prepare($linestring_sql);
@@ -1292,8 +1235,8 @@ h4,hp ,hd
 		st_astext(
       ST_LineMerge(
     		st_intersection(
-    		(select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaAct."'  ),
-    		(select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'  )
+    		(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaAct."'  ),
+    		(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  )
 		    )
      )
 		) intersect_lineamza,
@@ -1304,22 +1247,20 @@ h4,hp ,hd
         st_intersection(
 			(
 			st_intersection(
-			(select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaAct."'  ),
-			(select distinct geom from public.indec_e0211poligono where frac||radio = '".$fr."'  and mzatxt =  '".$mzaSig."'  )
+			(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaAct."'  ),
+			(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  )
 			)
 			),
 			(
-			select ST_Boundary(st_union(geom)) from indec_e0211poligono where frac||radio = '".$fr."'
+			select ST_Boundary(st_union(geom)) from indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'
 			)
 		 )
    ),1)
 		) intersect_lineabound
 
 		FROM  public.indec_e0211poligono
-		WHERE frac||radio = '".$fr."'
+		WHERE prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'
 		limit 1
-
-
 		"
 
 
@@ -1443,8 +1384,6 @@ h4,hp ,hd
               		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
       	,
 
-
-
       	edge as edge2,
 
       	*,
@@ -1466,17 +1405,15 @@ h4,hp ,hd
       case when altura_orderby = 'HASTA' then geoc.hn end desc,
       case when altura_orderby = 'DESDE' then geoc.hn end asc,
       h4,hp ,hd) seqid_por_segmentolinea,
-
-
-      geoc.ref_id as geocref_id,
+      case when geoc.ref_id is null then ruteo3.edge2 else geoc.ref_id end as geocref_id,
       geoc.id as geocid,
-      geoc.hn as geochn,
-      geoc.cnombre as geoccnombre,
+      case when geoc.hn is not null then geoc.hn else ruteo3.altura_start end as geochn,
+      ruteo3.nombre as geoccnombre,
       geoc.h4 as geoch4,
       geoc.hp as geochp,
       geoc.hd as geocdh,
-      geoc.geom as geocgeom, st_astext(geoc.geom) as geocgeomtext,
-
+      case when geoc.geom is null then  ST_GeomFromText(ruteo3.st_astext) else geoc.geom end as geocgeom,
+      case when geoc.geom is null then  ruteo3.st_astext else st_astext(geoc.geom) end as geocgeomtext,
       ruteo3.*
 
       from ruteo3
@@ -1746,17 +1683,15 @@ else {
               case when altura_orderby = 'HASTA' then geoc.hn end desc,
               case when altura_orderby = 'DESDE' then geoc.hn end asc,
               h4,hp ,hd) seqid_por_segmentolinea,
-
-
-              geoc.ref_id as geocref_id,
+              case when geoc.ref_id is null then ruteo3.edge2 else geoc.ref_id end as geocref_id,
               geoc.id as geocid,
-              geoc.hn as geochn,
-              geoc.cnombre as geoccnombre,
+              case when geoc.hn is not null then geoc.hn else ruteo3.altura_start end as geochn,
+              ruteo3.nombre as geoccnombre,
               geoc.h4 as geoch4,
               geoc.hp as geochp,
               geoc.hd as geocdh,
-              geoc.geom as geocgeom, st_astext(geoc.geom) as geocgeomtext,
-
+              case when geoc.geom is null then  ST_GeomFromText(ruteo3.st_astext) else geoc.geom end as geocgeom,
+              case when geoc.geom is null then  ruteo3.st_astext else st_astext(geoc.geom) end as geocgeomtext,
               ruteo3.*
 
               from ruteo3
@@ -1853,21 +1788,21 @@ $respuesta = [
 'orden_detalle' =>$respuestamza
 ];
 
-//echo  json_encode($respuesta);
-
 
 $ordenruteo = array();
 
+
 foreach ($respuesta as $valmza) {
   foreach ($valmza as $val) {
+
 
     if ($val['mzaTipoPath'] == 'start') {
       array_push(
           $ordenruteo,
           $val['pgr_ruteo_res']
         );
-
     }
+
 
     if ($val['mzaTipoPath'] == 'mid') {
         array_push(
@@ -1877,59 +1812,37 @@ foreach ($respuesta as $valmza) {
     }
 
 
-
     if ($val['mzaTipoPath'] == 'end') {
-
         array_push(
             $ordenruteo,
             $val['pgr_ruteo_res']
           );
-
     }
+
+
   }
 }
 
-
-
-
-
+//reverse inner boundary return
 foreach ($respuesta as $valmza) {
-
   foreach (array_reverse($valmza) as $val) {
-
     if ($val['mzaTipoPath'] == 'mid') {
-
-        array_push(
-            $ordenruteo,
-            array_reverse($val['linestring_ruteo_res_order_false'])
-          );
-
+      array_push(
+          $ordenruteo,
+          array_reverse($val['linestring_ruteo_res_order_false'])
+        );
     }
-
   }
 }
-
-
-
-
 
 
 echo json_encode($ordenruteo);
 
-} catch (PDOException $e) {
+//print_r($ordenruteo);
 
+} catch (PDOException $e) {
     print "¡Error!: " . $e->getMessage() . "<br/>";
     die();
-
 }
-
-
-
-
-//
-
-
-
-
 
 ?>
