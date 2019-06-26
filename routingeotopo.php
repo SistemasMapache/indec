@@ -626,7 +626,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
   }
 
 
-  //3ra manz
+  //posee 3ra manz
   if ( !empty($mzaTerc ) ) {
 
     			foreach($mbd->query(
@@ -749,7 +749,10 @@ $linestring_ruteo_res = array();
 $linestring_ruteo_res_order_true = array();
 $linestring_ruteo_res_order_false = array();
 
+
+
 if ( $mzaCantRutas == 2) {
+
 
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
   $pgr_ruteo_sql = "
@@ -896,6 +899,9 @@ if ( $mzaCantRutas == 2) {
 
 
 
+
+
+
   $linestring_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $linestring_ruteo->execute();
 
@@ -935,6 +941,7 @@ if ( $mzaCantRutas == 2) {
   $linestring_ruteo_res = $pgr_ruteo->fetchAll(PDO::FETCH_ASSOC);
 
 } elseif ( $mzaCantRutas == 1) {
+
 
   $pgr_ruteo_sql = "
   with ruteo as (
@@ -1146,8 +1153,6 @@ if ( $mzaCantRutas == 2) {
       ";
 
 
-
-
       $linestring_ruteo = $mbd->prepare($linestring_sql);
       $linestring_ruteo->execute();
 
@@ -1162,7 +1167,10 @@ if ( $mzaCantRutas == 2) {
               'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
               'geoccnombre'              => $fila['geoccnombre'],
               'geochn'                   => $fila['geochn'],
-              'geocgeomtext'             => $fila['geocgeomtext']
+              'geocgeomtext'             => $fila['geocgeomtext'],
+              'geoch4'                   => $fila['geoch4'],
+              'geochp'                   => $fila['geochp'],
+              'geocdh'                   => $fila['geocdh']
             ]
           );
         }
@@ -1175,7 +1183,10 @@ if ( $mzaCantRutas == 2) {
               'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
               'geoccnombre'              => $fila['geoccnombre'],
               'geochn'                   => $fila['geochn'],
-              'geocgeomtext'             => $fila['geocgeomtext']
+              'geocgeomtext'             => $fila['geocgeomtext'],
+              'geoch4'                   => $fila['geoch4'],
+              'geochp'                   => $fila['geochp'],
+              'geocdh'                   => $fila['geocdh']
             ]
           );
         }
@@ -1193,23 +1204,64 @@ if ( $mzaCantRutas == 2) {
 
 }
 
-                // Resultados por radio
-                $respuestamza[$x] = [
-                  'radio' => $fr,
-                  'manzana_cant'=> count($arrayMZAOK),
-                  'manzana_cantrutas'=> $mzaCantRutas,
-                  'mzaTipoPath'=> $mzaTipoPath,
-                  'manzana_pos' => $x+1,
-                  'manzana_act'=>$mzaAct,
-                  'manzana_sig' => $mzaSig,
-                  'entremanzanas_linea' => $fila['intersect_lineamza'],
-                  'entremanzanas_punto_interseccion' => $wkt,
-        				  'pgr_verticeid_old'=>$pgr_verticeid_old,
-                  'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
-                  'pgr_ruteo_res' => $linestring_ruteo_res,
-                  'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
-                  'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
-                ];
+
+if ( count($linestring_ruteo_res[0][0]) > 0 ) {
+
+
+  $linestring_ruteo_res2 = array();
+  foreach ($linestring_ruteo_res as $pgrval) {
+    foreach ($pgrval as $pgrval2) {
+      array_push($linestring_ruteo_res2,$pgrval2);
+    }
+  }
+
+  // Resultados de la ultima manzana (fin de la secuencia)
+  // Esta manzana es el inicio del subconjunto de manzanas no boundaries en caso de contener las mismas.
+  $respuestamza[$x] = [
+
+    'radio' => $fr,
+    'manzana_cant'=> count($arrayMZAOK),
+    'manzana_cantrutas'=> $mzaCantRutas,
+    'mzaTipoPath'=> $mzaTipoPath,
+    'manzana_pos' => $x+1,
+    'manzana_act'=>$mzaAct,
+    'manzana_sig'=> null,
+    'entremanzanas_linea' => null,
+    'entremanzanas_punto_interseccion' => null,
+    //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
+    'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
+    'pgr_verticeid' => '',
+    'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
+    'pgr_ruteo_res' => $linestring_ruteo_res2,
+    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
+    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+
+  ];
+
+} else {
+
+  // Resultados por radio
+  $respuestamza[$x] = [
+    'radio' => $fr,
+    'manzana_cant'=> count($arrayMZAOK),
+    'manzana_cantrutas'=> $mzaCantRutas,
+    'mzaTipoPath'=> $mzaTipoPath,
+    'manzana_pos' => $x+1,
+    'manzana_act'=>$mzaAct,
+    'manzana_sig' => $mzaSig,
+    'entremanzanas_linea' => $fila['intersect_lineamza'],
+    'entremanzanas_punto_interseccion' => $wkt,
+    'pgr_verticeid_old'=>$pgr_verticeid_old,
+    'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
+    'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
+    'pgr_ruteo_res' => $linestring_ruteo_res,
+    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
+    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+  ];
+
+}
+
+
 
 
 
@@ -1217,9 +1269,9 @@ if ( $mzaCantRutas == 2) {
 
     		}
 
-  }
+  } //end 3ramanz
 
-
+  // si POSEE mzasig
   elseif ( !empty($mzaSig   ) ) {
 
 
@@ -1227,16 +1279,16 @@ if ( $mzaCantRutas == 2) {
     $linestring_ruteo_res_order_true = array();
     $linestring_ruteo_res_order_false = array();
 
-
-		foreach($mbd->query( "
+		foreach($mbd->query(
+    "
 		SELECT
 		distinct
 
 		st_astext(
       ST_LineMerge(
     		st_intersection(
-    		(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaAct."'  ),
-    		(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  )
+    		(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')  and mzatxt =  '".$mzaAct."'  ),
+    		(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')  and mzatxt =  '".$mzaSig."'  )
 		    )
      )
 		) intersect_lineamza,
@@ -1247,19 +1299,19 @@ if ( $mzaCantRutas == 2) {
         st_intersection(
 			(
 			st_intersection(
-			(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaAct."'  ),
-			(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'  and mzatxt =  '".$mzaSig."'  )
+			(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')  and mzatxt =  '".$mzaAct."'  ),
+			(select distinct geom from public.indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')  and mzatxt =  '".$mzaSig."'  )
 			)
 			),
 			(
-			select ST_Boundary(st_union(geom)) from indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'
+			select ST_Boundary(st_union(geom)) from indec_e0211poligono where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
 			)
 		 )
    ),1)
 		) intersect_lineabound
 
 		FROM  public.indec_e0211poligono
-		WHERE prov||depto||codloc||frac||radio in ('".$pdcl.$fr."'
+		WHERE prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
 		limit 1
 		"
 
@@ -1272,7 +1324,7 @@ if ( $mzaCantRutas == 2) {
 
     $pgr_verticeid_old = '';
     if (isset($pgr_vertix_res['pgr_vertix_id'])) {
-    $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
+      $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
     }
 		// id del vertice segun la geometria del punto de adyacencia entre manzanas
 		$pgr_vertix_sql = "
@@ -1287,6 +1339,7 @@ if ( $mzaCantRutas == 2) {
 
 
     if ( $mzaCantRutas == 2) {
+
 
       // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
       $pgr_ruteo_sql = "
@@ -1377,9 +1430,7 @@ if ( $mzaCantRutas == 2) {
 
       		(
       		select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
-      			where prov||depto||codloc||frac||radio in (
-      			'".$pdcl.$fr."'
-      			)
+      			where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
       		)        			)
               		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
       	,
@@ -1429,7 +1480,6 @@ if ( $mzaCantRutas == 2) {
       ";
 
 
-
       $linestring_ruteo = $mbd->prepare($pgr_ruteo_sql);
       $linestring_ruteo->execute();
 
@@ -1443,7 +1493,10 @@ if ( $mzaCantRutas == 2) {
               'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
               'geoccnombre'              => $fila['geoccnombre'],
               'geochn'                   => $fila['geochn'],
-              'geocgeomtext'             => $fila['geocgeomtext']
+              'geocgeomtext'             => $fila['geocgeomtext'],
+              'geoch4'                   => $fila['geoch4'],
+              'geochp'                   => $fila['geochp'],
+              'geocdh'                   => $fila['geocdh']
             ]
           );
         }
@@ -1456,7 +1509,10 @@ if ( $mzaCantRutas == 2) {
               'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
               'geoccnombre'              => $fila['geoccnombre'],
               'geochn'                   => $fila['geochn'],
-              'geocgeomtext'             => $fila['geocgeomtext']
+              'geocgeomtext'             => $fila['geocgeomtext'],
+              'geoch4'                   => $fila['geoch4'],
+              'geochp'                   => $fila['geochp'],
+              'geocdh'                   => $fila['geocdh']
             ]
           );
         }
@@ -1484,6 +1540,7 @@ if ( $mzaCantRutas == 2) {
 		    'entremanzanas_punto_interseccion' => $wkt,
 			  'pgr_verticeid_old'=>$pgr_verticeid_old,
         'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
+        'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
         'pgr_ruteo_res' => $linestring_ruteo_res,
         'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
         'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
@@ -1508,6 +1565,7 @@ else {
     $linestring_ruteo_res_order_false = array();
 
     $pgr_ruteo_sql = "
+    with ruteo as (
     SELECT * FROM pgr_TSP(
         $$
         SELECT * FROM pgr_dijkstraCostMatrix
@@ -1537,7 +1595,13 @@ else {
         $$,
         start_id := ".$pgr_vertix_res['pgr_vertix_id'].",
         randomize := false
-    )";
+      )
+      )
+      select
+      *,
+      ( select distinct st_astext(ST_CollectionHomogenize(the_geom)) from public.indec_e0211linea_vertices_pgr where id = ruteo.node limit 1) as node_geom
+      from ruteo
+      ";
 
       $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
       $pgr_ruteo->execute();
@@ -1557,8 +1621,6 @@ else {
         $nodo2geom = $pgr_ruteo_res1[$nodosig]['node_geom'];
 
         $linestring_sql = "
-
-
 
               with ruteo3 as (
 
@@ -1621,9 +1683,7 @@ else {
               	(select st_astext(ST_CollectionHomogenize(geom)) from public.indec_e0211linea l where l.id = edge),
               	(
               		select ST_AsText(ST_CollectionHomogenize(ST_Boundary(ST_Union(geom)))) boundary_geom_astext FROM indec_e0211poligono
-              			where prov||depto||codloc||frac||radio in (
-              			'".$pdcl.$fr."'
-              			)
+              			where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
               		)
               	,
 
@@ -1651,9 +1711,7 @@ else {
 
               		(
               		select ST_CollectionHomogenize(ST_Boundary(ST_Union(geom))) FROM indec_e0211poligono
-              			where prov||depto||codloc||frac||radio in (
-              			'".$pdcl.$fr."'
-              			)
+              			where prov||depto||codloc||frac||radio in ('".$pdcl.$fr."')
               		)        			)
                       		) in ('ST_LineString', 'ST_MultiLineString', 'ST_GeometryCollection') boundaryradio_intersecta
               	,
@@ -1722,7 +1780,10 @@ else {
                       'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
                       'geoccnombre'              => $fila['geoccnombre'],
                       'geochn'                   => $fila['geochn'],
-                      'geocgeomtext'             => $fila['geocgeomtext']
+                      'geocgeomtext'             => $fila['geocgeomtext'],
+                      'geoch4'                   => $fila['geoch4'],
+                      'geochp'                   => $fila['geochp'],
+                      'geocdh'                   => $fila['geocdh']
                     ]
                   );
                 }
@@ -1735,7 +1796,10 @@ else {
                       'boundaryradio_intersecta' => $fila['boundaryradio_intersecta'],
                       'geoccnombre'              => $fila['geoccnombre'],
                       'geochn'                   => $fila['geochn'],
-                      'geocgeomtext'             => $fila['geocgeomtext']
+                      'geocgeomtext'             => $fila['geocgeomtext'],
+                      'geoch4'                   => $fila['geoch4'],
+                      'geochp'                   => $fila['geochp'],
+                      'geocdh'                   => $fila['geocdh']
                     ]
                   );
                 }
@@ -1750,6 +1814,16 @@ else {
 
     }
 
+
+if ( count($linestring_ruteo_res[0][0]) > 0 ) {
+
+
+  $linestring_ruteo_res2 = array();
+  foreach ($linestring_ruteo_res as $pgrval) {
+    foreach ($pgrval as $pgrval2) {
+      array_push($linestring_ruteo_res2,$pgrval2);
+    }
+  }
 
   // Resultados de la ultima manzana (fin de la secuencia)
   // Esta manzana es el inicio del subconjunto de manzanas no boundaries en caso de contener las mismas.
@@ -1767,11 +1841,41 @@ else {
     //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
     'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
     'pgr_verticeid' => '',
+    'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
+    'pgr_ruteo_res' => $linestring_ruteo_res2,
+    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
+    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+
+  ];
+
+} else {
+
+  // Resultados de la ultima manzana (fin de la secuencia)
+  // Esta manzana es el inicio del subconjunto de manzanas no boundaries en caso de contener las mismas.
+  $respuestamza[$x] = [
+
+    'radio' => $fr,
+    'manzana_cant'=> count($arrayMZAOK),
+    'manzana_cantrutas'=> $mzaCantRutas,
+    'mzaTipoPath'=> $mzaTipoPath,
+    'manzana_pos' => $x+1,
+    'manzana_act'=>$mzaAct,
+    'manzana_sig'=> null,
+    'entremanzanas_linea' => null,
+    'entremanzanas_punto_interseccion' => null,
+    //repite el ultimo vertice porque es de 1 ruteo (round route desde hacia mismo vertice)
+    'pgr_verticeid_old'=> $pgr_vertix_res['pgr_vertix_id'],
+    'pgr_verticeid' => '',
+    'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
     'pgr_ruteo_res' => $linestring_ruteo_res,
     'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
     'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
 
   ];
+
+}
+
+
 
 }
 
@@ -1787,6 +1891,8 @@ $respuesta = [
 'orden_mzas' =>$arrayMZAOK,
 'orden_detalle' =>$respuestamza
 ];
+
+//echo json_encode($respuesta);
 
 
 $ordenruteo = array();
@@ -1837,8 +1943,6 @@ foreach ($respuesta as $valmza) {
 
 
 echo json_encode($ordenruteo);
-
-//print_r($ordenruteo);
 
 } catch (PDOException $e) {
     print "¡Error!: " . $e->getMessage() . "<br/>";
