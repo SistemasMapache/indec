@@ -80,7 +80,7 @@ function linestring_sql_rutas(
   1 as path_id,
   ".$vari_nodosig." as path_seq,
 
-  ".$vari_nodo1." as nodoid,
+  ".$vari_nodo1." as node,
   '".$vari_nodo1geom."' as nodogeom,
 
   ".$vari_nodo2." as nodo2id,
@@ -1567,8 +1567,8 @@ $respuesta = [
 //echo json_encode($respuesta);
 
 
-$ordenruteo = array();
-
+$ordenruteo   = array();
+$ordenruteoOK = array();
 
 foreach ($respuesta as $valmza) {
 
@@ -1620,7 +1620,63 @@ foreach ($respuesta as $valmza) {
 }
 
 
-echo json_encode($ordenruteo);
+for ($order0 = 0; $order0 < count($ordenruteo); $order0++) {
+
+  for ($order1 = 0; $order1 < count($ordenruteo[$order0]); $order1++) {
+
+    array_push($ordenruteoOK,
+    [
+
+    'order0' => $order0,
+    'order1' => $order1,
+
+    'seqid_por_segmentolinea' => $ordenruteo[$order0][$order1]['seqid_por_segmentolinea'],
+    'geocref_id' => $ordenruteo[$order0][$order1]['geocref_id'],
+    'geocid' => $ordenruteo[$order0][$order1]['geocid'],
+
+    'geochn_numeropuerta' => $ordenruteo[$order0][$order1]['geochn_numeropuerta'],
+    'geoccnombre' => $ordenruteo[$order0][$order1]['geoccnombre'],
+    'geoch4_tipovivienda' => $ordenruteo[$order0][$order1]['geoch4_tipovivienda'],
+    'geochp_edificio_numeropiso' => $ordenruteo[$order0][$order1]['geochp_edificio_numeropiso'],
+    'geochd_edificio_numerodepto' => $ordenruteo[$order0][$order1]['geochd_edificio_numerodepto'],
+
+    'geocgeom' => $ordenruteo[$order0][$order1]['geocgeom'],
+    'geocgeomtext' => $ordenruteo[$order0][$order1]['geocgeomtext'],
+    'st_astext' => $ordenruteo[$order0][$order1]['st_astext'],
+    'boundary_geom_astext' => $ordenruteo[$order0][$order1]['boundary_geom_astext'],
+    'boundaryradio_intersecta' => $ordenruteo[$order0][$order1]['boundaryradio_intersecta'],
+
+    'edge2' => $ordenruteo[$order0][$order1]['edge2'],
+    'mzaid' => $ordenruteo[$order0][$order1]['mzaid'],
+    'path_id' => $ordenruteo[$order0][$order1]['path_id'],
+    'path_seq' => $ordenruteo[$order0][$order1]['path_seq'],
+    'tipo' => $ordenruteo[$order0][$order1]['tipo'],
+
+    'nombre' => $ordenruteo[$order0][$order1]['nombre'],
+    'desde' => $ordenruteo[$order0][$order1]['desde'],
+    'hasta' => $ordenruteo[$order0][$order1]['hasta'],
+    'hn' => $ordenruteo[$order0][$order1]['hn'],
+    'node' => $ordenruteo[$order0][$order1]['node'],
+    'altura_start' => $ordenruteo[$order0][$order1]['altura_start'],
+    'altura_orderby' => $ordenruteo[$order0][$order1]['altura_orderby'],
+    'paridad' => $ordenruteo[$order0][$order1]['paridad'],
+
+    ]
+    );
+
+  }
+
+}
+
+// datos del radio
+$respuestaOK = [
+'fraccionradio' => $fr,
+'orden_mzas' =>$arrayMZAOK,
+'orden_detalle' =>$respuestamza,
+'orden_ruteoOK' =>$ordenruteoOK
+];
+
+echo json_encode($respuestaOK);
 
 } catch (PDOException $e) {
     print "error consulta: " . $e->getMessage();
