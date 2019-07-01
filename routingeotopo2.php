@@ -1700,7 +1700,7 @@ echo json_encode($respuestaOK);
                 geochd_edificio_numerodepto, geocgeomtext, st_astext, boundary_geom_astext,
                 boundaryradio_intersecta, edge2, mzaid, path_id, path_seq, tipo,
                 nombre, desde, hasta, hn, node, altura_start, altura_orderby,
-                paridad) VALUES (
+                paridad, fr, pdcl) VALUES (
                      ".$ordenruteo['order0'].",
                      ".$ordenruteo['order1'].",
                      ".$ordenruteo['seqid_por_segmentolinea'].",
@@ -1727,7 +1727,9 @@ echo json_encode($respuestaOK);
                      ".$ordenruteo['node'].",
                      ".$ordenruteo['altura_start'].",
                      '".$ordenruteo['altura_orderby']."',
-                     '".$ordenruteo['paridad']."'
+                     '".$ordenruteo['paridad']."',
+                     ".$fr.",
+                     ".$pdcl."
                   )";
 
           $ruteoinserta = $mbd->prepare($ruteosql);
