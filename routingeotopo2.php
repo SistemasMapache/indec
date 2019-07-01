@@ -1620,49 +1620,55 @@ foreach ($respuesta as $valmza) {
 }
 
 
+
 for ($order0 = 0; $order0 < count($ordenruteo); $order0++) {
 
   for ($order1 = 0; $order1 < count($ordenruteo[$order0]); $order1++) {
 
-    array_push($ordenruteoOK,
-    [
 
-    'order0' => $order0,
-    'order1' => $order1,
 
-    'seqid_por_segmentolinea' => $ordenruteo[$order0][$order1]['seqid_por_segmentolinea'],
-    'geocref_id' => $ordenruteo[$order0][$order1]['geocref_id'],
-    'geocid' => $ordenruteo[$order0][$order1]['geocid'],
+        $datarow = [
 
-    'geochn_numeropuerta' => $ordenruteo[$order0][$order1]['geochn_numeropuerta'],
-    'geoccnombre' => $ordenruteo[$order0][$order1]['geoccnombre'],
-    'geoch4_tipovivienda' => $ordenruteo[$order0][$order1]['geoch4_tipovivienda'],
-    'geochp_edificio_numeropiso' => $ordenruteo[$order0][$order1]['geochp_edificio_numeropiso'],
-    'geochd_edificio_numerodepto' => $ordenruteo[$order0][$order1]['geochd_edificio_numerodepto'],
+        'order0' => $order0,
+        'order1' => $order1,
 
-    'geocgeom' => $ordenruteo[$order0][$order1]['geocgeom'],
-    'geocgeomtext' => $ordenruteo[$order0][$order1]['geocgeomtext'],
-    'st_astext' => $ordenruteo[$order0][$order1]['st_astext'],
-    'boundary_geom_astext' => $ordenruteo[$order0][$order1]['boundary_geom_astext'],
-    'boundaryradio_intersecta' => $ordenruteo[$order0][$order1]['boundaryradio_intersecta'],
+        'seqid_por_segmentolinea' => $ordenruteo[$order0][$order1]['seqid_por_segmentolinea'],
+        'geocref_id' => $ordenruteo[$order0][$order1]['geocref_id'],
+        'geocid' => $ordenruteo[$order0][$order1]['geocid'],
 
-    'edge2' => $ordenruteo[$order0][$order1]['edge2'],
-    'mzaid' => $ordenruteo[$order0][$order1]['mzaid'],
-    'path_id' => $ordenruteo[$order0][$order1]['path_id'],
-    'path_seq' => $ordenruteo[$order0][$order1]['path_seq'],
-    'tipo' => $ordenruteo[$order0][$order1]['tipo'],
+        'geochn_numeropuerta' => $ordenruteo[$order0][$order1]['geochn_numeropuerta'],
+        'geoccnombre' => $ordenruteo[$order0][$order1]['geoccnombre'],
+        'geoch4_tipovivienda' => $ordenruteo[$order0][$order1]['geoch4_tipovivienda'],
+        'geochp_edificio_numeropiso' => $ordenruteo[$order0][$order1]['geochp_edificio_numeropiso'],
+        'geochd_edificio_numerodepto' => $ordenruteo[$order0][$order1]['geochd_edificio_numerodepto'],
 
-    'nombre' => $ordenruteo[$order0][$order1]['nombre'],
-    'desde' => $ordenruteo[$order0][$order1]['desde'],
-    'hasta' => $ordenruteo[$order0][$order1]['hasta'],
-    'hn' => $ordenruteo[$order0][$order1]['hn'],
-    'node' => $ordenruteo[$order0][$order1]['node'],
-    'altura_start' => $ordenruteo[$order0][$order1]['altura_start'],
-    'altura_orderby' => $ordenruteo[$order0][$order1]['altura_orderby'],
-    'paridad' => $ordenruteo[$order0][$order1]['paridad'],
+        'geocgeomtext' => $ordenruteo[$order0][$order1]['geocgeomtext'],
+        'st_astext' => $ordenruteo[$order0][$order1]['st_astext'],
+        'boundary_geom_astext' => $ordenruteo[$order0][$order1]['boundary_geom_astext'],
+        'boundaryradio_intersecta' => $ordenruteo[$order0][$order1]['boundaryradio_intersecta'],
 
-    ]
-    );
+        'edge2' => $ordenruteo[$order0][$order1]['edge2'],
+        'mzaid' => $ordenruteo[$order0][$order1]['mzaid'],
+        'path_id' => $ordenruteo[$order0][$order1]['path_id'],
+        'path_seq' => $ordenruteo[$order0][$order1]['path_seq'],
+        'tipo' => $ordenruteo[$order0][$order1]['tipo'],
+
+        'nombre' => $ordenruteo[$order0][$order1]['nombre'],
+        'desde' => $ordenruteo[$order0][$order1]['desde'],
+        'hasta' => $ordenruteo[$order0][$order1]['hasta'],
+        'hn' => $ordenruteo[$order0][$order1]['hn'],
+        'node' => $ordenruteo[$order0][$order1]['node'],
+        'altura_start' => $ordenruteo[$order0][$order1]['altura_start'],
+        'altura_orderby' => $ordenruteo[$order0][$order1]['altura_orderby'],
+        'paridad' => $ordenruteo[$order0][$order1]['paridad']
+
+      ];
+
+
+    array_push($ordenruteoOK, $datarow );
+
+
+
 
   }
 
@@ -1677,6 +1683,57 @@ $respuestaOK = [
 ];
 
 echo json_encode($respuestaOK);
+
+
+
+
+
+
+
+      $mbd = new PDO('pgsql:host=localhost; dbname=gisdata', 'postgres', 'postgres');
+      foreach ($ordenruteoOK as $ordenruteo) {
+
+          $ruteosql =
+                "INSERT INTO public.indec_res(
+                order0, order1, seqid_por_segmentolinea, geocref_id, geocid,
+                geochn_numeropuerta, geoccnombre, geoch4_tipovivienda, geochp_edificio_numeropiso,
+                geochd_edificio_numerodepto, geocgeomtext, st_astext, boundary_geom_astext,
+                boundaryradio_intersecta, edge2, mzaid, path_id, path_seq, tipo,
+                nombre, desde, hasta, hn, node, altura_start, altura_orderby,
+                paridad) VALUES (
+                     ".$ordenruteo['order0'].",
+                     ".$ordenruteo['order1'].",
+                     ".$ordenruteo['seqid_por_segmentolinea'].",
+                     ".$ordenruteo['geocref_id'].",
+                     ".$ordenruteo['geocid'].",
+                     ".$ordenruteo['geochn_numeropuerta'].",
+                     '".$ordenruteo['geoccnombre']."',
+                     ".$ordenruteo['geoch4_tipovivienda'].",
+                     ".$ordenruteo['geochp_edificio_numeropiso'].",
+                     ".$ordenruteo['geochd_edificio_numerodepto'].",
+                     '".$ordenruteo['geocgeomtext']."',
+                     '".$ordenruteo['st_astext']."',
+                     '".$ordenruteo['boundary_geom_astext']."',
+                     (case when '".$ordenruteo['boundaryradio_intersecta']."' = '1' then 1 else 0 end),
+                     ".$ordenruteo['edge2'].",
+                     ".$ordenruteo['mzaid'].",
+                     ".$ordenruteo['path_id'].",
+                     ".$ordenruteo['path_seq'].",
+                     '".$ordenruteo['tipo']."',
+                     '".$ordenruteo['nombre']."',
+                     ".$ordenruteo['desde'].",
+                     ".$ordenruteo['hasta'].",
+                     ".$ordenruteo['hn'].",
+                     ".$ordenruteo['node'].",
+                     ".$ordenruteo['altura_start'].",
+                     '".$ordenruteo['altura_orderby']."',
+                     '".$ordenruteo['paridad']."'
+                  )";
+
+          $ruteoinserta = $mbd->prepare($ruteosql);
+          $ruteoinsertaexecute = $ruteoinserta->execute();
+      }
+
 
 } catch (PDOException $e) {
     print "error consulta: " . $e->getMessage();
