@@ -44,6 +44,11 @@ having prov||depto||codloc||frac||radio in
 (
 '020110100108'
 )
+
+where
+  pdcl = '02011010' and
+  fr in ('0108','0107')
+
 */
 
 
@@ -66,9 +71,6 @@ WITH fracs001 AS (
     pdcl,
     fr
   FROM fracs001
-  where
-    pdcl = '02011010' and
-    fr in ('0108','0107')
 
   ORDER BY id
 
