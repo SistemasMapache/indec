@@ -1,8 +1,8 @@
 <?php
-header('Content-Type: application/json');
+//header('Content-Type: application/json');
 
 error_reporting(E_ALL); ini_set('display_errors', 1);
-
+//error_reporting(E_ERROR | E_PARSE);
 
 $respuesta             = [];
 
@@ -19,7 +19,7 @@ Dado un conjunto de prov||depto||codloc||frac||radio , el script devuelve:
 - linestring boundary exterior del radio
 - cantidad de manzanas que tocan boundary
 - cantidad de manzanas que no tocan boundary
-- bool si el radio contiene manzanas que no tocan boundary
+- bool si es un radio cuyo total de manzanas tocan boundary del radio
 - para los radios con bool true (solo radios cuyo total de manzanas tocan boundary del radio):
     - mzaid (prov||depto||codloc||frac||radio|mza)
     - tipo de intersección entre manzana y boundary
@@ -39,30 +39,43 @@ ej input having in :
 '020110100706'
 */
 
-
+/*
+having prov||depto||codloc||frac||radio in
+(
+'020110100108'
+)
+*/
 
 
 // geometria de boundary por Radio: prov||depto||codloc||frac||radio
 $bordes_fracciones_sql = "
-    WITH fracs001 AS (
-      SELECT
-      prov||depto||codloc||frac||radio as boundary_fracradio,
-      ST_AsText(ST_Boundary(ST_Union(geom))) boundary_geom_astext
-      FROM indec_e0211poligono
-      GROUP BY prov||depto||codloc||frac||radio
-      having prov||depto||codloc||frac||radio in (
-        '020110100108'
-        )
-    )
-      SELECT
-      	ROW_NUMBER () OVER (ORDER BY boundary_fracradio) as id,
-      	boundary_fracradio,
-      	boundary_geom_astext
-      FROM fracs001
-      ORDER BY id
+WITH fracs001 AS (
+  SELECT
+  prov||depto||codloc||frac||radio as boundary_fracradio,
+  ST_AsText(ST_Boundary(ST_Union(geom))) boundary_geom_astext,
+  prov||depto||codloc as pdcl,
+  frac||radio as fr
+  FROM indec_e0211poligono
+  GROUP BY prov||depto||codloc||frac||radio,prov||depto||codloc, frac||radio
+
+)
+  SELECT distinct
+    ROW_NUMBER () OVER (ORDER BY boundary_fracradio) as id,
+    boundary_fracradio,
+    boundary_geom_astext,
+    pdcl,
+    fr
+  FROM fracs001
+  where
+    pdcl = '02011010' and
+    fr in ('0108','0107')
+
+  ORDER BY id
+
     ";
 
 try {
+
 
 $mbd = new PDO('pgsql:host=localhost;dbname=gisdata', 'indec', 'indec');
 
@@ -274,8 +287,19 @@ foreach($mbd->query( $bordes_fracciones_sql ) as $fila) {
 
     // Resultados por radio
     $respuesta[$fila['id']-1] = [
+
+
       'radio' => $fila['boundary_fracradio'],
-      'radio_geom' => $fila['boundary_geom_astext'],
+      'radio_pdcl' => $fila['pdcl'],
+      'radio_fr' => $fila['fr'],
+      'radio_manzanas_tocan_borde_true_cant' => $manzanasBorderTrue,
+      'radio_manzanas_tocan_borde_false_cant' => $manzanasBorderFalse,
+      'radio_manzanas_todas_borde_bool' => $manzanasNoBoundary
+
+
+      /*
+      'radio_geom' => $fila['boundary_geom_astext']
+      ,
       'radio_manzanas_tocan_borde_true_cant' => $manzanasBorderTrue,
       'radio_manzanas_tocan_borde_false_cant' => $manzanasBorderFalse,
       'radio_manzanas_todas_borde_bool' => $manzanasNoBoundary,
@@ -283,6 +307,9 @@ foreach($mbd->query( $bordes_fracciones_sql ) as $fila) {
       'radio_manzanas_tocan_borde_false_lista' => $res_manzanas_false,
       'res_manzanas_linderas_true' =>$res_manzanas_linderas_true,
       'res_manzanas_linderas_false' =>$res_manzanas_linderas_false
+      */
+
+
     ];
 
 
@@ -291,13 +318,29 @@ foreach($mbd->query( $bordes_fracciones_sql ) as $fila) {
 
 
 
+foreach ($respuesta as $valrm ) {
+
+
+  if ( $valrm['radio_manzanas_todas_borde_bool'] == true ) {
+
+    print_r($valrm);
+
+    $pdcl = $valrm['radio_pdcl'];
+    $fr = $valrm['radio_fr'];
+
+    echo "procesa ".$pdcl.$fr;
+    $output = shell_exec("php /var/www/html/indec/01git/indec/routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
+
+  } else {
+  }
+
+}
+
+//echo json_encode( $respuesta, JSON_PRETTY_PRINT);
 
 
 
 
-
-
-echo json_encode( $respuesta, JSON_PRETTY_PRINT);
 } catch (\PDOException $e) {
     echo $e->getMessage();
 }
