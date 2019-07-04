@@ -1682,7 +1682,7 @@ $respuestaOK = [
 'orden_ruteoOK' =>$ordenruteoOK
 ];
 
-echo json_encode($respuestaOK);
+//echo json_encode($respuestaOK);
 
 
 
@@ -1692,6 +1692,8 @@ echo json_encode($respuestaOK);
 
       $mbd = new PDO('pgsql:host=localhost; dbname=gisdata', 'postgres', 'postgres');
       foreach ($ordenruteoOK as $ordenruteo) {
+
+          echo ".";
 
           $ruteosql =
                 "INSERT INTO public.indec_res(

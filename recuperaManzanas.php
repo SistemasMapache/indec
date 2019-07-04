@@ -330,8 +330,9 @@ foreach ($respuesta as $valrm ) {
     $pdcl = $valrm['radio_pdcl'];
     $fr = $valrm['radio_fr'];
 
-    echo "procesa ".$pdcl.$fr;
-    $output = shell_exec("php /var/www/html/indec/01git/indec/routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
+    echo "procesa : ".$pdcl.$fr;
+    $procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
+    echo $procesaRadio;
 
   } else {
   }
