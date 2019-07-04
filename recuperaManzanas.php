@@ -319,26 +319,30 @@ foreach($mbd->query( $bordes_fracciones_sql ) as $fila) {
 }
 
 
+$it = 0;
+$if = 0;
 
 foreach ($respuesta as $valrm ) {
 
 
-  if ( $valrm['radio_manzanas_todas_borde_bool'] == true ) {
 
-    print_r($valrm);
+  if ( $valrm['radio_manzanas_todas_borde_bool'] == true ) {
+    $it = $it + 1;
+    //print_r($valrm);
 
     $pdcl = $valrm['radio_pdcl'];
     $fr = $valrm['radio_fr'];
 
-    echo "procesa : ".$pdcl.$fr;
-    $procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
-    echo $procesaRadio;
+    //echo "procesa : ".$pdcl.$fr;
+    //$procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
+    //echo $procesaRadio;
 
   } else {
+    $if = $if + 1;
   }
 
 }
-
+echo $it."@@@".$if;
 //echo json_encode( $respuesta, JSON_PRETTY_PRINT);
 
 

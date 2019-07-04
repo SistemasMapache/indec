@@ -1682,7 +1682,7 @@ $respuestaOK = [
 'orden_ruteoOK' =>$ordenruteoOK
 ];
 
-//echo json_encode($respuestaOK);
+echo json_encode($respuestaOK);
 
 
 
@@ -1693,7 +1693,7 @@ $respuestaOK = [
       $mbd = new PDO('pgsql:host=localhost; dbname=gisdata', 'postgres', 'postgres');
       foreach ($ordenruteoOK as $ordenruteo) {
 
-          echo ".";
+          //echo ".";
 
           $ruteosql =
                 "INSERT INTO public.indec_res(
@@ -1707,12 +1707,12 @@ $respuestaOK = [
                      ".$ordenruteo['order1'].",
                      ".$ordenruteo['seqid_por_segmentolinea'].",
                      ".$ordenruteo['geocref_id'].",
-                     ".$ordenruteo['geocid'].",
-                     ".$ordenruteo['geochn_numeropuerta'].",
+                     (case when '".$ordenruteo['geocid']."' = '' then '-' else '".$ordenruteo['geocid']."' end),
+                     '".$ordenruteo['geochn_numeropuerta']."',
                      '".$ordenruteo['geoccnombre']."',
-                     ".$ordenruteo['geoch4_tipovivienda'].",
-                     ".$ordenruteo['geochp_edificio_numeropiso'].",
-                     ".$ordenruteo['geochd_edificio_numerodepto'].",
+                     (case when '".$ordenruteo['geoch4_tipovivienda']."' = '' then null else '".$ordenruteo['geoch4_tipovivienda']."' end),
+                     (case when '".$ordenruteo['geochp_edificio_numeropiso']."' = '' then null else '".$ordenruteo['geochp_edificio_numeropiso']."' end),
+                     (case when '".$ordenruteo['geochd_edificio_numerodepto']."' = '' then null else '".$ordenruteo['geochd_edificio_numerodepto']."' end),
                      '".$ordenruteo['geocgeomtext']."',
                      '".$ordenruteo['st_astext']."',
                      '".$ordenruteo['boundary_geom_astext']."',
@@ -1725,14 +1725,15 @@ $respuestaOK = [
                      '".$ordenruteo['nombre']."',
                      ".$ordenruteo['desde'].",
                      ".$ordenruteo['hasta'].",
-                     ".$ordenruteo['hn'].",
+                     (case when '".$ordenruteo['hn']."' = '' then '-' else '".$ordenruteo['hn']."' end),
                      ".$ordenruteo['node'].",
                      ".$ordenruteo['altura_start'].",
                      '".$ordenruteo['altura_orderby']."',
                      '".$ordenruteo['paridad']."',
-                     ".$fr.",
-                     ".$pdcl."
+                     '".$fr."',
+                     '".$pdcl."'
                   )";
+
 
           $ruteoinserta = $mbd->prepare($ruteosql);
           $ruteoinsertaexecute = $ruteoinserta->execute();
