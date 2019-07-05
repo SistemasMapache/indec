@@ -241,6 +241,8 @@ function pgr_ruteo_sql_rutas(
   if ($tiporuteo == 2) {
 
 
+  $vari_mzaAct = str_pad($vari_mzaAct, 3, '0', STR_PAD_LEFT);
+
     // pgr_ksp
   $pgr_ruteo_sql = "
     with ruteo3 as (
@@ -255,8 +257,8 @@ function pgr_ruteo_sql_rutas(
      public.indec_e0211linea
      WHERE
      (
-       mzai like ''%".$vari_fr.'0'.$vari_mzaAct."'' or
-       mzad like ''%".$vari_fr.'0'.$vari_mzaAct."'' )',
+       mzai like ''%".$vari_fr.$vari_mzaAct."'' or
+       mzad like ''%".$vari_fr.$vari_mzaAct."'' )',
        ".$vari_pgr_verticeid_old.",
        ".$vari_pgr_vertix_res_pgr_vertix_id.",
        2,
@@ -392,6 +394,8 @@ function pgr_ruteo_sql_rutas(
   // cantidad de caminos ruteo  : 1
   elseif ($tiporuteo == 1) {
 
+      $vari_mzaAct = str_pad($vari_mzaAct, 3, '0', STR_PAD_LEFT);
+
       // pgr_TSP // pgr_dijkstraCostMatrix
       $pgr_ruteo_sql = "
       with ruteo as (
@@ -409,13 +413,8 @@ function pgr_ruteo_sql_rutas(
             public.indec_e0211linea
             WHERE
             (
-              mzai like ''%".$vari_fr."0%'' or
-              mzad like ''%".$vari_fr."0%''
-            )
-            AND
-            (
-              mzad like ''%".$vari_mzaAct."'' or
-              mzai like ''%".$vari_mzaAct."''
+              mzai like ''%".$vari_fr.$vari_mzaAct."%'' or
+              mzad like ''%".$vari_fr.$vari_mzaAct."%''
             )
             ',
             ( SELECT array_agg(id) FROM indec_e0211linea_vertices_pgr ),
@@ -1024,7 +1023,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
   }
 
 
-  //posee 3ra manz
+  //no posee 3ra manz
   if ( !empty($mzaTerc ) ) {
 
     			foreach($mbd->query(
@@ -1155,7 +1154,6 @@ if ( $mzaCantRutas == 2) {
   pgr_ruteo_sql_rutas( $pdcl, $fr, $mzaAct, $pgr_verticeid_old, $pgr_vertix_res['pgr_vertix_id'], 2 );
   $linestring_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $linestring_ruteo->execute();
-
 
   while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
 
@@ -1305,6 +1303,7 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
   elseif ( !empty($mzaSig   ) ) {
 
 
+
     $linestring_ruteo_res = array();
     $linestring_ruteo_res_order_pathid1 = array();
     $linestring_ruteo_res_order_pathid2 = array();
@@ -1390,6 +1389,10 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
             }
 
       }
+
+
+
+
 
       $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
       $pgr_ruteo->execute();
@@ -1696,7 +1699,7 @@ echo json_encode($respuestaOK);
       foreach ($ordenruteoOK as $ordenruteo) {
           $ifr = $ifr + 1;
 
-          echo ".";
+          //echo ".";
 
           $ruteosql =
                 "INSERT INTO public.indec_res(
@@ -1737,7 +1740,6 @@ echo json_encode($respuestaOK);
                      '".$fr."',
                      '".$pdcl."'
                   )";
-
 
           $ruteoinserta = $mbd->prepare($ruteosql);
           $ruteoinsertaexecute = $ruteoinserta->execute();
