@@ -231,7 +231,7 @@ function pgr_ruteo_sql_rutas(
     $vari_pgr_vertix_res_pgr_vertix_id,
     $tiporuteo
     )
-{
+  {
 
   //start
   // pgrouting pgr_ksp para 2 vertices diferentes de inicio : fin
@@ -432,10 +432,10 @@ function pgr_ruteo_sql_rutas(
         from ruteo
         ";
 
-  }
+      }
 
-}
-//end funcion ruteos
+  }
+  //end funcion ruteos
 
 
 
@@ -1128,7 +1128,7 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
           $pgr_verticeid_old = '';
           if (isset($pgr_vertix_res['pgr_vertix_id'])) {
-          $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
+            $pgr_verticeid_old = $pgr_vertix_res['pgr_vertix_id'];
           }
 					// id del vertice segun la geometria del punto de adyacencia entre manzanas
 					$pgr_vertix_sql = "
@@ -1143,15 +1143,15 @@ for ($x = 0; $x < count($arrayMZAOK); $x++) {
 
 
 
-$linestring_ruteo_res = array();
-$linestring_ruteo_res_order_true = array();
-$linestring_ruteo_res_order_false = array();
+          $linestring_ruteo_res = array();
+          $linestring_ruteo_res_order_pathid1 = array();
+          $linestring_ruteo_res_order_pathid2 = array();
 
 
 
 if ( $mzaCantRutas == 2) {
 
-
+  //fx
   pgr_ruteo_sql_rutas( $pdcl, $fr, $mzaAct, $pgr_verticeid_old, $pgr_vertix_res['pgr_vertix_id'], 2 );
   $linestring_ruteo = $mbd->prepare($pgr_ruteo_sql);
   $linestring_ruteo->execute();
@@ -1159,16 +1159,17 @@ if ( $mzaCantRutas == 2) {
 
   while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
 
-    if ($fila['boundaryradio_intersecta'] == true) {
+
+
+//    if ($fila['boundaryradio_intersecta'] == true) {
+    if ($fila['path_id'] == 1) {
       array_push(
-        $linestring_ruteo_res_order_true,
+        $linestring_ruteo_res_order_pathid1,
         $fila
       );
-    }
-
-    else {
+    } else {
       array_push(
-        $linestring_ruteo_res_order_false,
+        $linestring_ruteo_res_order_pathid2,
         $fila
       );
     }
@@ -1212,19 +1213,18 @@ if ( $mzaCantRutas == 2) {
       while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
 
 
-        if ($fila['boundaryradio_intersecta'] == 'true') {
-          array_push(
-            $linestring_ruteo_res_order_true,
-            $fila
-          );
-        }
-
-        else {
-          array_push(
-            $linestring_ruteo_res_order_false,
-            $fila
-          );
-        }
+      //    if ($fila['boundaryradio_intersecta'] == true) {
+          if ($fila['path_id'] == 1) {
+            array_push(
+              $linestring_ruteo_res_order_pathid1,
+              $fila
+            );
+          } else {
+            array_push(
+              $linestring_ruteo_res_order_pathid2,
+              $fila
+            );
+          }
 
       }
 
@@ -1264,8 +1264,8 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
     'pgr_verticeid' => '',
     'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
     'pgr_ruteo_res' => $linestring_ruteo_res2,
-    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
-    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+    'linestring_ruteo_res_order_path1'=>$linestring_ruteo_res_order_pathid1,
+    'linestring_ruteo_res_order_path2'=>$linestring_ruteo_res_order_pathid2
   ];
 
 } else {
@@ -1285,8 +1285,8 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
     'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
     'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
     'pgr_ruteo_res' => $linestring_ruteo_res,
-    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
-    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+    'linestring_ruteo_res_order_path1'=>$linestring_ruteo_res_order_pathid1,
+    'linestring_ruteo_res_order_path2'=>$linestring_ruteo_res_order_pathid2
   ];
 
 }
@@ -1306,8 +1306,8 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
 
 
     $linestring_ruteo_res = array();
-    $linestring_ruteo_res_order_true = array();
-    $linestring_ruteo_res_order_false = array();
+    $linestring_ruteo_res_order_pathid1 = array();
+    $linestring_ruteo_res_order_pathid2 = array();
 
 		foreach($mbd->query(
     "
@@ -1376,19 +1376,18 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
 
       while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
 
-        if ($fila['boundaryradio_intersecta'] == true) {
-          array_push(
-            $linestring_ruteo_res_order_true,
-            $fila
-          );
-        }
-
-        else {
-          array_push(
-            $linestring_ruteo_res_order_false,
-            $fila
-          );
-        }
+        //    if ($fila['boundaryradio_intersecta'] == true) {
+            if ($fila['path_id'] == 1) {
+              array_push(
+                $linestring_ruteo_res_order_pathid1,
+                $fila
+              );
+            } else {
+              array_push(
+                $linestring_ruteo_res_order_pathid2,
+                $fila
+              );
+            }
 
       }
 
@@ -1415,8 +1414,8 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
         'pgr_verticeid' => $pgr_vertix_res['pgr_vertix_id'],
         'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
         'pgr_ruteo_res' => $linestring_ruteo_res,
-        'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
-        'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+        'linestring_ruteo_res_order_path1'=>$linestring_ruteo_res_order_pathid1,
+        'linestring_ruteo_res_order_path2'=>$linestring_ruteo_res_order_pathid2
 
 		  ];
 
@@ -1434,8 +1433,8 @@ else {
 
 
     $linestring_ruteo_res = array();
-    $linestring_ruteo_res_order_true = array();
-    $linestring_ruteo_res_order_false = array();
+    $linestring_ruteo_res_order_pathid1 = array();
+    $linestring_ruteo_res_order_pathid2 = array();
 
     pgr_ruteo_sql_rutas( $pdcl, $fr, $mzaAct, $pgr_verticeid_old, $pgr_vertix_res['pgr_vertix_id'], 1 );
     $pgr_ruteo = $mbd->prepare($pgr_ruteo_sql);
@@ -1462,19 +1461,18 @@ else {
 
         while ($fila = $linestring_ruteo->fetch(PDO::FETCH_ASSOC)) {
 
-          if ($fila['boundaryradio_intersecta'] == 'true') {
-            array_push(
-              $linestring_ruteo_res_order_true,
-              $fila
-            );
-          }
-
-          else {
-            array_push(
-              $linestring_ruteo_res_order_false,
-              $fila
-            );
-          }
+          //    if ($fila['boundaryradio_intersecta'] == true) {
+              if ($fila['path_id'] == 1) {
+                array_push(
+                  $linestring_ruteo_res_order_pathid1,
+                  $fila
+                );
+              } else {
+                array_push(
+                  $linestring_ruteo_res_order_pathid2,
+                  $fila
+                );
+              }
 
         }
 
@@ -1515,8 +1513,8 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
     'pgr_verticeid' => '',
     'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
     'pgr_ruteo_res' => $linestring_ruteo_res2,
-    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
-    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+    'linestring_ruteo_res_order_path1'=>$linestring_ruteo_res_order_pathid1,
+    'linestring_ruteo_res_order_path2'=>$linestring_ruteo_res_order_pathid2
 
   ];
 
@@ -1540,8 +1538,8 @@ if ( count($linestring_ruteo_res[0][0]) > 0 ) {
     'pgr_verticeid' => '',
     'esmultiarray1' => ( count($linestring_ruteo_res[0][0] )),
     'pgr_ruteo_res' => $linestring_ruteo_res,
-    'linestring_ruteo_res_order_true'=>$linestring_ruteo_res_order_true,
-    'linestring_ruteo_res_order_false'=>$linestring_ruteo_res_order_false
+    'linestring_ruteo_res_order_path1'=>$linestring_ruteo_res_order_pathid1,
+    'linestring_ruteo_res_order_path2'=>$linestring_ruteo_res_order_pathid2
 
   ];
 
@@ -1570,6 +1568,8 @@ $respuesta = [
 $ordenruteo   = array();
 $ordenruteoOK = array();
 
+
+// TO-DO: middle: va por path_id: 1, vuelve por path_id: 2.
 foreach ($respuesta as $valmza) {
 
   foreach ($valmza as $val) {
@@ -1586,7 +1586,7 @@ foreach ($respuesta as $valmza) {
     if ($val['mzaTipoPath'] == 'mid') {
         array_push(
             $ordenruteo,
-            $val['linestring_ruteo_res_order_true']
+            $val['linestring_ruteo_res_order_path1']
           );
     }
 
@@ -1611,7 +1611,7 @@ foreach ($respuesta as $valmza) {
     if ($val['mzaTipoPath'] == 'mid') {
       array_push(
           $ordenruteo,
-          array_reverse($val['linestring_ruteo_res_order_false'])
+          array_reverse($val['linestring_ruteo_res_order_path2'])
         );
     }
 
@@ -1691,18 +1691,22 @@ echo json_encode($respuestaOK);
 
 
       $mbd = new PDO('pgsql:host=localhost; dbname=gisdata', 'postgres', 'postgres');
-      foreach ($ordenruteoOK as $ordenruteo) {
+      $ifr = 0;
 
-          //echo ".";
+      foreach ($ordenruteoOK as $ordenruteo) {
+          $ifr = $ifr + 1;
+
+          echo ".";
 
           $ruteosql =
                 "INSERT INTO public.indec_res(
-                order0, order1, seqid_por_segmentolinea, geocref_id, geocid,
+                orderfr, order0, order1, seqid_por_segmentolinea, geocref_id, geocid,
                 geochn_numeropuerta, geoccnombre, geoch4_tipovivienda, geochp_edificio_numeropiso,
                 geochd_edificio_numerodepto, geocgeomtext, st_astext, boundary_geom_astext,
                 boundaryradio_intersecta, edge2, mzaid, path_id, path_seq, tipo,
                 nombre, desde, hasta, hn, node, altura_start, altura_orderby,
                 paridad, fr, pdcl) VALUES (
+                     ".$ifr.",
                      ".$ordenruteo['order0'].",
                      ".$ordenruteo['order1'].",
                      ".$ordenruteo['seqid_por_segmentolinea'].",
