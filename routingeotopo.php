@@ -1741,8 +1741,8 @@ echo json_encode($respuestaOK);
                      '".$pdcl."'
                   )";
 
-          $ruteoinserta = $mbd->prepare($ruteosql);
-          $ruteoinsertaexecute = $ruteoinserta->execute();
+          //$ruteoinserta = $mbd->prepare($ruteosql);
+          //$ruteoinsertaexecute = $ruteoinserta->execute();
       }
 
 
