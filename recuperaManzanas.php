@@ -321,33 +321,30 @@ $if = 0;
 
 foreach ($respuesta as $valrm ) {
 
+  $pdcl = $valrm['radio_pdcl'];
+  $fr = $valrm['radio_fr'];
+
   if ( $valrm['radio_manzanas_todas_borde_bool'] == true ) {
+
     //iTrue
     $it = $it + 1;
-    //print_r($valrm);
-
-    $pdcl = $valrm['radio_pdcl'];
-    $fr = $valrm['radio_fr'];
-
-    echo ".. procesa : ".$pdcl.$fr;
-    //$procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
-    echo $procesaRadio;
-
+    print_r($valrm);
+    echo "\n .. procesa TRUE : ".$pdcl.$fr."\n";
+    $procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
+    echo $procesaRadio."\n";
   } else {
+
     //iFalse
+    echo "\n .. procesa FALSE : ".$pdcl.$fr."\n";
     $if = $if + 1;
-
-
 
   }
 
 }
 
-echo "// FR Insertados TRUE : ". $it;
-echo "// FR Con manzanas internas (toDo) FALSE : ".$if;
-
-//echo json_encode( $respuesta, JSON_PRETTY_PRINT);
-
+echo "\n RES: FR Insertados TRUE : ". $it . "\n";
+echo "\n RES: FR Con manzanas internas (toDo) FALSE : ".$if. "\n";
+echo json_encode( $respuesta, JSON_PRETTY_PRINT);
 
 } catch (\PDOException $e) {
     echo $e->getMessage();
