@@ -1753,7 +1753,7 @@ echo json_encode($respuestaOK);
         INSERT INTO public.indec_res2
         select *,
         NTILE (( select round(max(orderfr)/30) from indec_res where fr = '".$fr."' and pdcl = '".$pdcl."' )::integer) OVER(ORDER BY orderfr) as orderntile30
-        from public.indec_res WHERE  fr = '".$fr."' and pdcl = '".$pdcl."'
+        from public.indec_res WHERE  fr = '".$fr."' and pdcl = '".$pdcl." order by orderfr'
         ";
 
       $ntileUpdate = $mbd->prepare($ntilesql);
