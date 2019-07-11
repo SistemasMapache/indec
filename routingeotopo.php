@@ -262,7 +262,7 @@ function pgr_ruteo_sql_rutas(
        ".$vari_pgr_verticeid_old.",
        ".$vari_pgr_vertix_res_pgr_vertix_id.",
        2,
-       true
+       directed:=false
     ) where edge > 0
 
     )
@@ -432,6 +432,8 @@ function pgr_ruteo_sql_rutas(
         ";
 
       }
+
+
 
   }
   //end funcion ruteos
@@ -1699,7 +1701,7 @@ echo json_encode($respuestaOK);
       foreach ($ordenruteoOK as $ordenruteo) {
           $ifr = $ifr + 1;
 
-          //echo ".";
+          echo ".";
 
           $ruteosql =
                 "INSERT INTO public.indec_res(
@@ -1741,8 +1743,8 @@ echo json_encode($respuestaOK);
                      '".$pdcl."'
                   )";
 
-          //$ruteoinserta = $mbd->prepare($ruteosql);
-          //$ruteoinsertaexecute = $ruteoinserta->execute();
+          $ruteoinserta = $mbd->prepare($ruteosql);
+          $ruteoinsertaexecute = $ruteoinserta->execute();
       }
 
 

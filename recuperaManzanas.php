@@ -4,10 +4,7 @@
 error_reporting(E_ALL); ini_set('display_errors', 1);
 //error_reporting(E_ERROR | E_PARSE);
 
-$respuesta             = [];
-
-
-
+$respuesta = [];
 
 /*
 
@@ -325,6 +322,7 @@ $if = 0;
 foreach ($respuesta as $valrm ) {
 
   if ( $valrm['radio_manzanas_todas_borde_bool'] == true ) {
+    //iTrue
     $it = $it + 1;
     //print_r($valrm);
 
@@ -332,21 +330,23 @@ foreach ($respuesta as $valrm ) {
     $fr = $valrm['radio_fr'];
 
     echo ".. procesa : ".$pdcl.$fr;
-    $procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
+    //$procesaRadio = shell_exec("php routingeotopo.php --fr=".$fr." --pdcl=".$pdcl);
     echo $procesaRadio;
 
   } else {
+    //iFalse
     $if = $if + 1;
+
+
+
   }
 
 }
 
-echo "// FR Insertados : ". $it;
-echo "// FR Con manzanas internas (toDo) : ".$if;
+echo "// FR Insertados TRUE : ". $it;
+echo "// FR Con manzanas internas (toDo) FALSE : ".$if;
 
 //echo json_encode( $respuesta, JSON_PRETTY_PRINT);
-
-
 
 
 } catch (\PDOException $e) {
