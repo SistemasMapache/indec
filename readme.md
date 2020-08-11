@@ -52,3 +52,6 @@ Recorrido desde una perspectiva de funciones de topologia ChPP y Dijkstra para e
 **geom_recorridomanzanas_linestringboundary.sql**
 
 test de recorrido de manzanas por valor 0-1 del linestring del radio y sus manzanas adyacentes
+
+
+Nota: si bien esta metodología satisfacia un nivel alto de casos > 80, no se pudo avanzar en dialogo para su optimización. 
